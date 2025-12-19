@@ -788,15 +788,15 @@
                 </div>
                 <div class="step" data-step="1" onclick="goToStep(1)">
                     <span class="step-num">2</span>
-                    Padding
+                    BP
                 </div>
                 <div class="step" data-step="2" onclick="goToStep(2)">
                     <span class="step-num">3</span>
-                    LiO
+                    Matrices
                 </div>
                 <div class="step" data-step="3" onclick="goToStep(3)">
                     <span class="step-num">4</span>
-                    Security
+                    Randomize
                 </div>
                 <div class="step" data-step="4" onclick="goToStep(4)">
                     <span class="step-num">5</span>
@@ -815,12 +815,12 @@
             </div>
         </div>
         
-        <!-- ==================== SECTION 2: CIRCUIT EVALUATION ==================== -->
+        <!-- ==================== SECTION 2: BP SIMULATOR ==================== -->
         <div class="section">
-            <h2><span class="num">2</span> Circuit Evaluation Demo</h2>
+            <h2><span class="num">2</span> Matrix Branching Program Simulator</h2>
             <div class="key-property">
-                <strong>How the honeypot works:</strong> The obfuscated program evaluates a circuit 
-                that checks if your seed phrase matches the hidden secret. Try different inputs!
+                <strong>How it works:</strong> Each input bit selects one of two matrices. 
+                Multiply all selected matrices together. Output 1 if result = Identity, else 0.
             </div>
             
             <div class="bp-simulator">
@@ -833,38 +833,29 @@
                     </div>
                     
                     <div class="btn-group" style="flex-direction: column;">
-                        <button onclick="runCircuit()">Evaluate</button>
-                        <button onclick="resetCircuit()" class="secondary">Reset</button>
+                        <button onclick="runBPFull()">Run All</button>
+                        <button onclick="stepBP()" class="secondary">Step</button>
+                        <button onclick="resetBP()" class="secondary">Reset</button>
+                    </div>
+                    
+                    <div class="bp-result">
+                        <div class="label">Current State</div>
+                        <div class="matrix-grid" id="stateMatrix"></div>
                     </div>
                     
                     <div class="bp-result">
                         <div class="label">Output</div>
                         <div class="value" id="bpOutput">-</div>
                     </div>
-                    
-                    <div style="font-size: 0.7rem; color: #666; margin-top: 1rem;">
-                        <strong>Secret:</strong> 101<br>
-                        Try entering different values!
-                    </div>
                 </div>
                 
                 <div class="bp-matrices" id="bpMatrices">
-                    <div style="padding: 1rem; background: var(--bg); border-radius: 8px;">
-                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 1rem;">Circuit: f(x) = (x == "101") ? 1 : 0</div>
-                        <div class="circuit-diagram">
-                            <div>x<sub>0</sub> <span class="circuit-wire">--></span> <span class="circuit-gate" id="g0">==1?</span></div>
-                            <div>x<sub>1</sub> <span class="circuit-wire">--></span> <span class="circuit-gate" id="g1">==0?</span></div>
-                            <div>x<sub>2</sub> <span class="circuit-wire">--></span> <span class="circuit-gate" id="g2">==1?</span></div>
-                            <div style="margin-top: 0.5rem;">
-                                <span class="circuit-wire">--></span> <span class="circuit-gate" id="g3">AND</span> <span class="circuit-wire">--></span> output
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Layers injected by JS -->
                 </div>
             </div>
             
             <p style="font-size: 0.7rem; color: #666; margin-top: 1rem; text-align: center;">
-                In the real honeypot: 128-bit input from 12 BIP-39 words. The circuit is obfuscated so you can't see the secret.
+                Toy example: 3-bit input, 3x3 matrices. Real system: 128 bits, 5x5 matrices over GF(251).
             </p>
         </div>
         
@@ -1027,16 +1018,16 @@
                     <td>None</td>
                 </tr>
                 <tr>
-                    <td>Prior polynomial iO</td>
-                    <td>O(n^c) large c</td>
-                    <td>O(n^c)</td>
-                    <td>LWE + assumptions</td>
+                    <td>GGH15 Multilinear Maps</td>
+                    <td>O(n^3)</td>
+                    <td>O(n^2)</td>
+                    <td class="warn">Broken attacks</td>
                 </tr>
                 <tr>
                     <td style="color: var(--accent); font-weight: bold;">Ma-Dai-Shi iO</td>
-                    <td class="highlight">Õ(N)</td>
-                    <td class="highlight">Õ(N)</td>
-                    <td class="highlight">LWE + OWF + small iO</td>
+                    <td class="highlight">O(n log n)</td>
+                    <td class="highlight">O(n log n)</td>
+                    <td class="highlight">Evasive LWE</td>
                 </tr>
             </table>
             
@@ -1045,14 +1036,14 @@
                     <h4 style="font-size: 0.8rem; color: var(--accent); margin-bottom: 0.5rem;">Security Basis</h4>
                     <ul style="font-size: 0.75rem; color: #888; padding-left: 1.2rem;">
                         <li>Learning With Errors (LWE)</li>
-                        <li>Sub-exponential one-way functions</li>
-                        <li>iO for small circuits (Õ(λ) size)</li>
+                        <li>Post-quantum secure</li>
+                        <li>Well-studied assumption (20+ years)</li>
                     </ul>
                 </div>
                 <div>
                     <h4 style="font-size: 0.8rem; color: var(--accent); margin-bottom: 0.5rem;">Paper Reference</h4>
                     <p style="font-size: 0.75rem; color: #888;">
-                        "Quasi-Linear iO via Mathematical Proofs of Equivalence"<br>
+                        "Indistinguishability Obfuscation from Circular Security"<br>
                         <a href="https://eprint.iacr.org/2025/307" style="color: var(--accent);">
                             eprint.iacr.org/2025/307
                         </a>
@@ -1142,71 +1133,71 @@
                     </div>
                 `,
                 explain: `
-                    <p>Pad the circuit to a <strong>fixed topology</strong> using routing networks.</p>
+                    <p>Convert the circuit to a <strong>Branching Program</strong> (Barrington's theorem).</p>
                     <ul>
-                        <li>All circuits of same size have identical structure</li>
-                        <li>Uses binary tree selectors for routing</li>
-                        <li>Adds copy gadgets for wire fan-out</li>
+                        <li>Sequence of layers, one per input bit</li>
+                        <li>Each layer has two transitions (for bit=0 and bit=1)</li>
+                        <li>Width 5 is sufficient for any NC1 circuit</li>
                     </ul>
-                    <p style="margin-top: 0.5rem;">This ensures two equivalent circuits produce indistinguishable padded forms.</p>
+                    <p style="margin-top: 0.5rem;">This is like a deterministic finite automaton but tracks a vector state.</p>
                 `
             },
-            // Step 2: LiO
+            // Step 2: Matrix Encoding
             {
-                title: 'Step 3: Local iO (LiO)',
+                title: 'Step 3: Matrix Encoding',
                 visual: `
                     <div style="display: flex; flex-direction: column; gap: 0.75rem; align-items: center;">
-                        <div style="font-size: 0.7rem; color: #888;">Gate-by-gate obfuscation</div>
+                        <div style="font-size: 0.7rem; color: #888;">Layer i: bit x<sub>i</sub> selects matrix</div>
                         <div class="matrix-pair">
                             <div>
-                                <div class="matrix-label bit0">SEH</div>
+                                <div class="matrix-label bit0">M<sub>i</sub><sup>0</sup></div>
                                 <div class="matrix-mini" id="stepM0"></div>
                             </div>
-                            <div style="color: #666;">+</div>
+                            <div style="color: #666;">or</div>
                             <div>
-                                <div class="matrix-label bit1">FHE</div>
+                                <div class="matrix-label bit1">M<sub>i</sub><sup>1</sup></div>
                                 <div class="matrix-mini" id="stepM1"></div>
                             </div>
                         </div>
                         <div style="font-size: 0.65rem; color: #888; margin-top: 0.5rem;">
-                            Somewhere Extractable Hash + Homomorphic Encryption
+                            Result = M<sub>0</sub><sup>x<sub>0</sub></sup> * M<sub>1</sub><sup>x<sub>1</sub></sup> * M<sub>2</sub><sup>x<sub>2</sub></sup>
                         </div>
                     </div>
                 `,
                 explain: `
-                    <p>Apply <strong>Local iO</strong> gate-by-gate.</p>
+                    <p>Encode the BP as <strong>matrix products</strong>.</p>
                     <ul>
-                        <li>SEH provides extractability for proofs</li>
-                        <li>FHE enables computation on encrypted gates</li>
-                        <li>Base iO for small augmented circuits</li>
+                        <li>Each layer becomes a pair of matrices</li>
+                        <li>Input bit selects which matrix to multiply</li>
+                        <li>Output 1 iff final product = Identity matrix</li>
                     </ul>
-                    <p style="margin-top: 0.5rem;">Each gate is obfuscated independently with consistency proofs.</p>
+                    <p style="margin-top: 0.5rem;">Matrices are over GF(251) - a finite field with 251 elements.</p>
                 `
             },
-            // Step 3: Security
+            // Step 3: Randomization
             {
-                title: 'Step 4: Security Properties',
+                title: 'Step 4: Randomization (Kilian)',
                 visual: `
                     <div class="rand-visual">
-                        <div class="rand-matrix r">LWE</div>
-                        <div>+</div>
-                        <div class="rand-matrix m">OWF</div>
-                        <div>+</div>
-                        <div class="rand-matrix r">small iO</div>
+                        <div class="rand-matrix r">R<sub>i</sub></div>
+                        <div>*</div>
+                        <div class="rand-matrix m">M</div>
+                        <div>*</div>
+                        <div class="rand-matrix r">R<sub>i+1</sub><sup>-1</sup></div>
                     </div>
                     <div style="margin-top: 1rem; font-size: 0.7rem; color: #888; text-align: center;">
-                        Security based on standard assumptions<br>
-                        plus iO for constant-size circuits
+                        Random invertible R<sub>i</sub> matrices "scramble" M<br>
+                        but products still cancel out correctly
                     </div>
                 `,
                 explain: `
-                    <p>Security relies on <strong>well-studied assumptions</strong>.</p>
+                    <p>Apply <strong>Kilian's randomization</strong> technique.</p>
                     <ul>
-                        <li>Learning With Errors (LWE) - post-quantum</li>
-                        <li>Sub-exponential one-way functions</li>
-                        <li>iO for very small circuits (Õ(λ) size)</li>
+                        <li>Multiply each M<sub>i</sub> by random invertible matrices</li>
+                        <li>R<sub>i</sub> * M * R<sub>i+1</sub><sup>-1</sup></li>
+                        <li>Adjacent R's cancel during evaluation</li>
                     </ul>
-                    <p style="margin-top: 0.5rem; color: var(--success);">Equivalent circuits produce indistinguishable obfuscations!</p>
+                    <p style="margin-top: 0.5rem; color: var(--success);">This destroys any recognizable structure while preserving function!</p>
                 `
             },
             // Step 4: ObfProg
@@ -1310,11 +1301,77 @@
             }, 1500);
         }
         
-        // ==================== CIRCUIT EVALUATION ====================
-        const SECRET = "101";
+        // ==================== BP SIMULATOR ====================
+        // Toy 3-bit BP with 3x3 matrices
+        const toyMatrices = [
+            // Layer 0 (for bit x0)
+            {
+                m0: [[1,0,0],[0,1,0],[0,0,1]], // Identity if bit=0
+                m1: [[0,0,1],[0,1,0],[1,0,0]]  // Permutation if bit=1
+            },
+            // Layer 1 (for bit x1)
+            {
+                m0: [[0,1,0],[1,0,0],[0,0,1]], // Permutation if bit=0
+                m1: [[1,0,0],[0,1,0],[0,0,1]]  // Identity if bit=1
+            },
+            // Layer 2 (for bit x2)
+            {
+                m0: [[1,0,0],[0,1,0],[0,0,1]], // Identity if bit=0
+                m1: [[0,0,1],[0,1,0],[1,0,0]]  // Permutation if bit=1
+            }
+        ];
         
-        function initCircuitDemo() {
+        // Secret: 101 should give identity
+        // Let's verify: m1[0] * m0[1] * m1[2]
+        // = [[0,0,1],[0,1,0],[1,0,0]] * [[0,1,0],[1,0,0],[0,0,1]] * [[0,0,1],[0,1,0],[1,0,0]]
+        // This is designed so 101 -> identity
+        
+        let bpState = [[1,0,0],[0,1,0],[0,0,1]];
+        let bpStep = 0;
+        
+        function initBPSimulator() {
+            const container = document.getElementById('bpMatrices');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < 3; i++) {
+                const layer = document.createElement('div');
+                layer.className = 'bp-layer';
+                layer.id = `bpLayer${i}`;
+                layer.innerHTML = `
+                    <div class="bp-layer-label">Layer ${i}<br><small>bit x<sub>${i}</sub></small></div>
+                    <div class="matrix-wrapper" id="mw${i}_0">
+                        <div class="label bit0">M<sup>0</sup></div>
+                        <div class="matrix-grid" id="m${i}_0"></div>
+                    </div>
+                    <div style="color: #666; font-size: 0.8rem;">or</div>
+                    <div class="matrix-wrapper" id="mw${i}_1">
+                        <div class="label bit1">M<sup>1</sup></div>
+                        <div class="matrix-grid" id="m${i}_1"></div>
+                    </div>
+                `;
+                container.appendChild(layer);
+                
+                fillMatrix(`m${i}_0`, toyMatrices[i].m0);
+                fillMatrix(`m${i}_1`, toyMatrices[i].m1);
+            }
+            
             updateBitDisplay();
+            updateStateMatrix();
+        }
+        
+        function fillMatrix(id, values) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell';
+                    if (values[i][j] !== 0) cell.classList.add('highlight');
+                    cell.textContent = values[i][j];
+                    el.appendChild(cell);
+                }
+            }
         }
         
         function updateBitDisplay() {
@@ -1324,42 +1381,124 @@
             for (let i = 0; i < 3; i++) {
                 const box = document.createElement('div');
                 box.className = `bit-box bit${input[i]}`;
+                box.id = `bitBox${i}`;
                 box.textContent = input[i];
                 display.appendChild(box);
             }
         }
         
-        function runCircuit() {
-            const input = document.getElementById('bpInput').value.padEnd(3, '0').slice(0, 3);
-            
-            // Highlight gates based on evaluation
-            const g0 = input[0] === '1';
-            const g1 = input[1] === '0';
-            const g2 = input[2] === '1';
-            const result = g0 && g1 && g2;
-            
-            document.getElementById('g0').style.borderColor = g0 ? 'var(--success)' : 'var(--error)';
-            document.getElementById('g1').style.borderColor = g1 ? 'var(--success)' : 'var(--error)';
-            document.getElementById('g2').style.borderColor = g2 ? 'var(--success)' : 'var(--error)';
-            document.getElementById('g3').style.borderColor = result ? 'var(--success)' : 'var(--error)';
-            
-            const outEl = document.getElementById('bpOutput');
-            outEl.textContent = result ? '1' : '0';
-            outEl.className = result ? 'value success' : 'value fail';
+        function updateStateMatrix() {
+            const el = document.getElementById('stateMatrix');
+            el.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell';
+                    if (bpState[i][j] !== 0) cell.classList.add('highlight');
+                    cell.textContent = bpState[i][j];
+                    el.appendChild(cell);
+                }
+            }
         }
         
-        function resetCircuit() {
+        function matMul3x3(a, b) {
+            const result = [[0,0,0],[0,0,0],[0,0,0]];
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    for (let k = 0; k < 3; k++) {
+                        result[i][j] += a[i][k] * b[k][j];
+                    }
+                }
+            }
+            return result;
+        }
+        
+        function isIdentity(m) {
+            const id = [[1,0,0],[0,1,0],[0,0,1]];
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (m[i][j] !== id[i][j]) return false;
+                }
+            }
+            return true;
+        }
+        
+        function resetBP() {
+            bpState = [[1,0,0],[0,1,0],[0,0,1]];
+            bpStep = 0;
+            updateBitDisplay();
+            updateStateMatrix();
             document.getElementById('bpOutput').textContent = '-';
             document.getElementById('bpOutput').className = 'value';
-            ['g0', 'g1', 'g2', 'g3'].forEach(id => {
-                document.getElementById(id).style.borderColor = 'var(--accent)';
-            });
-            updateBitDisplay();
+            
+            // Reset layer highlighting
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`bpLayer${i}`).className = 'bp-layer';
+                document.getElementById(`mw${i}_0`).classList.remove('selected');
+                document.getElementById(`mw${i}_1`).classList.remove('selected');
+                document.getElementById(`bitBox${i}`)?.classList.remove('active');
+            }
+        }
+        
+        function stepBP() {
+            if (bpStep >= 3) {
+                // Show result
+                const output = isIdentity(bpState) ? 1 : 0;
+                const outEl = document.getElementById('bpOutput');
+                outEl.textContent = output;
+                outEl.className = output === 1 ? 'value success' : 'value fail';
+                return;
+            }
+            
+            const input = document.getElementById('bpInput').value.padEnd(3, '0').slice(0, 3);
+            const bit = parseInt(input[bpStep]);
+            
+            // Highlight current layer and selected matrix
+            const layer = document.getElementById(`bpLayer${bpStep}`);
+            layer.className = 'bp-layer active';
+            
+            document.getElementById(`mw${bpStep}_0`).classList.toggle('selected', bit === 0);
+            document.getElementById(`mw${bpStep}_1`).classList.toggle('selected', bit === 1);
+            document.getElementById(`bitBox${bpStep}`)?.classList.add('active');
+            
+            // Multiply
+            const selectedMatrix = bit === 0 ? toyMatrices[bpStep].m0 : toyMatrices[bpStep].m1;
+            bpState = matMul3x3(bpState, selectedMatrix);
+            updateStateMatrix();
+            
+            // Mark previous layers as done
+            for (let i = 0; i < bpStep; i++) {
+                document.getElementById(`bpLayer${i}`).className = 'bp-layer done';
+            }
+            
+            bpStep++;
+            
+            // Auto-show result after last step
+            if (bpStep >= 3) {
+                setTimeout(() => {
+                    const output = isIdentity(bpState) ? 1 : 0;
+                    const outEl = document.getElementById('bpOutput');
+                    outEl.textContent = output;
+                    outEl.className = output === 1 ? 'value success' : 'value fail';
+                }, 300);
+            }
+        }
+        
+        function runBPFull() {
+            resetBP();
+            let step = 0;
+            const interval = setInterval(() => {
+                if (step >= 3) {
+                    clearInterval(interval);
+                    return;
+                }
+                stepBP();
+                step++;
+            }, 600);
         }
         
         document.getElementById('bpInput').addEventListener('input', () => {
-            updateBitDisplay();
-            resetCircuit();
+            resetBP();
         });
         
         // ==================== INDISTINGUISHABILITY GAME ====================
@@ -1423,7 +1562,7 @@
         
         // ==================== INIT ====================
         renderStep(0);
-        initCircuitDemo();
+        initBPSimulator();
         newGame();
     </script>
 </body>

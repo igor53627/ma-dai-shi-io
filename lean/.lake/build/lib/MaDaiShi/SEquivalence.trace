@@ -1,0 +1,8 @@
+{"log":
+ [{"message":
+   ".> LEAN_PATH=././.lake/packages/Cli/.lake/build/lib:././.lake/packages/batteries/.lake/build/lib:././.lake/packages/Qq/.lake/build/lib:././.lake/packages/aesop/.lake/build/lib:././.lake/packages/proofwidgets/.lake/build/lib:././.lake/packages/importGraph/.lake/build/lib:././.lake/packages/LeanSearchClient/.lake/build/lib:././.lake/packages/plausible/.lake/build/lib:././.lake/packages/mathlib/.lake/build/lib:././.lake/build/lib DYLD_LIBRARY_PATH= /Users/user/.elan/toolchains/leanprover--lean4---v4.14.0/bin/lean ././././MaDaiShi/SEquivalence.lean -R ./././. -o ././.lake/build/lib/MaDaiShi/SEquivalence.olean -i ././.lake/build/lib/MaDaiShi/SEquivalence.ilean -c ././.lake/build/ir/MaDaiShi/SEquivalence.c --json",
+   "level": "trace"},
+  {"message":
+   "././././MaDaiShi/SEquivalence.lean:49:5: unused variable `h`\nnote: this linter can be disabled with `set_option linter.unusedVariables false`",
+   "level": "warning"}],
+ "depHash": "12786421544877466663"}

@@ -1,0 +1,13 @@
+{"log":
+ [{"message":
+   ".> LEAN_PATH=././.lake/packages/Cli/.lake/build/lib:././.lake/packages/batteries/.lake/build/lib:././.lake/packages/Qq/.lake/build/lib:././.lake/packages/aesop/.lake/build/lib:././.lake/packages/proofwidgets/.lake/build/lib:././.lake/packages/importGraph/.lake/build/lib:././.lake/packages/LeanSearchClient/.lake/build/lib:././.lake/packages/plausible/.lake/build/lib:././.lake/packages/mathlib/.lake/build/lib:././.lake/build/lib DYLD_LIBRARY_PATH= /Users/user/.elan/toolchains/leanprover--lean4---v4.14.0/bin/lean ././././MaDaiShi/Circuit.lean -R ./././. -o ././.lake/build/lib/MaDaiShi/Circuit.olean -i ././.lake/build/lib/MaDaiShi/Circuit.ilean -c ././.lake/build/ir/MaDaiShi/Circuit.c --json",
+   "level": "trace"},
+  {"message": "././././MaDaiShi/Circuit.lean:52:4: declaration uses 'sorry'",
+   "level": "warning"},
+  {"message": "././././MaDaiShi/Circuit.lean:56:4: declaration uses 'sorry'",
+   "level": "warning"},
+  {"message": "././././MaDaiShi/Circuit.lean:60:4: declaration uses 'sorry'",
+   "level": "warning"},
+  {"message": "././././MaDaiShi/Circuit.lean:64:4: declaration uses 'sorry'",
+   "level": "warning"}],
+ "depHash": "2919082801174512251"}

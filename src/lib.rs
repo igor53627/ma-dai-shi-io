@@ -1,7 +1,7 @@
 //! Ma-Dai-Shi 2025 Quasi-Linear Indistinguishability Obfuscation
 //!
 //! Implementation of the main construction from:
-//! "Quasi-Linear Indistinguishability Obfuscation via Mathematical Proofs of Equivalence"
+//! "Quasi-Linear Indistinguishability Obfuscation via Mathematical Proofs of Equivalence and Applications"
 //! (Ma, Dai, Shi 2025) - https://eprint.iacr.org/2025/307
 //!
 //! ## Key Theorem
@@ -51,7 +51,7 @@
 //! 3. **LiO**: Apply to padded circuit (from lio.rs)
 //!    - Gate-by-gate obfuscation
 //!    - SEH for consistency proofs
-//!    - Base iO for augmented gates
+//!    - Puncturable PRFs + MACs for wire encryption
 
 // ============================================================================
 // Stub Types (placeholders for dependencies from circuit-mixing-research)
