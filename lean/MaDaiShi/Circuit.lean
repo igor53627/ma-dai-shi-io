@@ -151,18 +151,34 @@ def Subcircuit.inp {din dout : Nat} {C : Circuit din dout} (S : Subcircuit C) : 
 def Subcircuit.out {din dout : Nat} {C : Circuit din dout} (S : Subcircuit C) : Finset WireId :=
   S.allOutputWires \ S.allInputWires
 
+/-- Extract the indices of gates in the subcircuit (in order) -/
+def Subcircuit.extractIndices {din dout : Nat} {C : Circuit din dout} (S : Subcircuit C) :
+    List (Fin C.gates.length) :=
+  (List.finRange C.gates.length).filter fun i => i ∈ S.gateIndices
+
 /-- Extract gates from subcircuit indices (preserving topological order) -/
 def Subcircuit.extractGates {din dout : Nat} {C : Circuit din dout} (S : Subcircuit C) : List (Gate din dout) :=
-  (List.finRange C.gates.length).filterMap fun i =>
-    if i ∈ S.gateIndices then some (C.gates.get i) else none
+  S.extractIndices.map fun i => C.gates.get i
+
+/-- extractGates equals filterMap formulation -/
+lemma Subcircuit.extractGates_eq_filterMap {din dout : Nat} {C : Circuit din dout} (S : Subcircuit C) :
+    S.extractGates = (List.finRange C.gates.length).filterMap fun i =>
+      if i ∈ S.gateIndices then some (C.gates.get i) else none := by
+  simp only [extractGates, extractIndices]
+  induction (List.finRange C.gates.length) with
+  | nil => simp
+  | cons a l ih =>
+    simp only [List.filter_cons, List.filterMap_cons]
+    split <;> simp_all
 
 /-- Membership lemma for extractGates -/
 lemma Subcircuit.mem_extractGates {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
     {g : Gate din dout} (hg : g ∈ S.extractGates) :
     ∃ i : Fin C.gates.length, i ∈ S.gateIndices ∧ g = C.gates.get i := by
-  simp only [extractGates, List.mem_filterMap] at hg
-  obtain ⟨i, _, hi⟩ := hg
-  split at hi <;> simp_all
+  simp only [extractGates, List.mem_map] at hg
+  obtain ⟨i, hi_mem, hi_eq⟩ := hg
+  simp only [extractIndices, List.mem_filter, List.mem_finRange, true_and] at hi_mem
+  exact ⟨i, hi_mem, hi_eq.symm⟩
 
 /-- Get the original index of a gate in extractGates -/
 lemma Subcircuit.extractGates_get_orig {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
@@ -171,6 +187,32 @@ lemma Subcircuit.extractGates_get_orig {din dout : Nat} {C : Circuit din dout} {
   have hmem : S.extractGates.get ⟨j, hj⟩ ∈ S.extractGates := List.get_mem _ _ _
   exact mem_extractGates hmem
 
+/-- The original index at position j is exactly origIndexAt j -/
+lemma Subcircuit.extractGates_get_orig_unique {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
+    (j : Nat) (hj : j < S.extractGates.length) :
+    let hj_idx : j < S.extractIndices.length := by simp [extractGates] at hj; exact hj
+    S.extractGates.get ⟨j, hj⟩ = C.gates.get (S.origIndexAt j hj_idx) ∧
+    S.origIndexAt j hj_idx ∈ S.gateIndices := by
+  intro hj_idx
+  constructor
+  · simp only [extractGates, List.get_map, origIndexAt]
+  · simp only [origIndexAt, extractIndices]
+    have h_mem := List.get_mem (List.filter (· ∈ S.gateIndices) (List.finRange C.gates.length)) j hj_idx
+    simp only [List.mem_filter, List.mem_finRange, true_and] at h_mem
+    exact h_mem
+
+/-- extractIndices is strictly increasing -/
+lemma Subcircuit.extractIndices_strictMono {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
+    {p q : Nat} (hp : p < S.extractIndices.length) (hq : q < S.extractIndices.length)
+    (hpq : p < q) :
+    S.extractIndices.get ⟨p, hp⟩ < S.extractIndices.get ⟨q, hq⟩ := by
+  simp only [extractIndices]
+  -- extractIndices is a sublist of finRange, and finRange is sorted
+  -- For a filtered list from a sorted list, smaller positions give smaller values
+  -- This is because filter preserves relative order
+  -- Proof: use that l.filter p is a sublist of l, and sublists of sorted lists are sorted
+  sorry
+
 /-- extractGates preserves order: if original indices satisfy i < j, their positions in extractGates do too -/
 lemma Subcircuit.extractGates_preserves_order {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
     {i j : Fin C.gates.length} (hi : i ∈ S.gateIndices) (hj : j ∈ S.gateIndices) (hij : i < j) :
@@ -178,20 +220,95 @@ lemma Subcircuit.extractGates_preserves_order {din dout : Nat} {C : Circuit din 
       pi < pj ∧
       S.extractGates.get ⟨pi, hpi⟩ = C.gates.get i ∧
       S.extractGates.get ⟨pj, hpj⟩ = C.gates.get j := by
-  -- extractGates iterates through finRange in order, so smaller original indices come first
-  sorry
+  -- i and j are in extractIndices (since they're in gateIndices)
+  -- Their positions pi, pj satisfy pi < pj because extractIndices is strictly mono
+  have hi_in : i ∈ S.extractIndices := by
+    simp only [extractIndices, List.mem_filter, List.mem_finRange, true_and]
+    exact hi
+  have hj_in : j ∈ S.extractIndices := by
+    simp only [extractIndices, List.mem_filter, List.mem_finRange, true_and]
+    exact hj
+  -- Get positions
+  obtain ⟨pi, hpi_lt, hpi_get⟩ := List.getElem_of_mem hi_in
+  obtain ⟨pj, hpj_lt, hpj_get⟩ := List.getElem_of_mem hj_in
+  -- Show pi < pj using strict monotonicity
+  have hpi_pj : pi < pj := by
+    by_contra h_not_lt
+    push_neg at h_not_lt
+    cases Nat.lt_or_eq_of_le h_not_lt with
+    | inl hpj_lt_pi =>
+      have := extractIndices_strictMono hpj_lt hpi_lt hpj_lt_pi
+      simp only [← hpi_get, ← hpj_get] at this
+      have : j < i := this
+      exact Nat.lt_irrefl _ (Nat.lt_trans hij this)
+    | inr heq =>
+      subst heq
+      simp only [← hpi_get, ← hpj_get] at hij
+      exact Nat.lt_irrefl _ hij
+  -- Now extractGates positions
+  have hpi_eg : pi < S.extractGates.length := by
+    simp only [extractGates, List.length_map]
+    exact hpi_lt
+  have hpj_eg : pj < S.extractGates.length := by
+    simp only [extractGates, List.length_map]
+    exact hpj_lt
+  refine ⟨pi, pj, hpi_eg, hpj_eg, hpi_pj, ?_, ?_⟩
+  · simp only [extractGates, List.get_map]
+    congr 1
+    exact hpi_get.symm
+  · simp only [extractGates, List.get_map]
+    congr 1
+    exact hpj_get.symm
 
-/-- extractGates is injective: different positions in extractGates come from different original indices -/
-lemma Subcircuit.extractGates_injective {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
+/-- extractIndices has no duplicates -/
+lemma Subcircuit.extractIndices_nodup {din dout : Nat} {C : Circuit din dout} (S : Subcircuit C) :
+    S.extractIndices.Nodup := by
+  simp only [extractIndices]
+  exact List.Nodup.filter _ (List.nodup_finRange _)
+
+/-- The original index at a position in extractIndices -/
+def Subcircuit.origIndexAt {din dout : Nat} {C : Circuit din dout} (S : Subcircuit C)
+    (p : Nat) (hp : p < S.extractIndices.length) : Fin C.gates.length :=
+  S.extractIndices.get ⟨p, hp⟩
+
+/-- origIndexAt is strictly monotone -/
+lemma Subcircuit.origIndexAt_strictMono {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
+    {p q : Nat} (hp : p < S.extractIndices.length) (hq : q < S.extractIndices.length)
+    (hpq : p < q) :
+    S.origIndexAt p hp < S.origIndexAt q hq :=
+  extractIndices_strictMono hp hq hpq
+
+/-- origIndexAt is injective -/
+lemma Subcircuit.origIndexAt_injective {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
+    {p q : Nat} (hp : p < S.extractIndices.length) (hq : q < S.extractIndices.length)
+    (h_eq : S.origIndexAt p hp = S.origIndexAt q hq) :
+    p = q := by
+  -- If p ≠ q, then by strict monotonicity origIndexAt p ≠ origIndexAt q
+  by_contra h_ne
+  cases Nat.lt_trichotomous p q with
+  | inl hlt =>
+    have := origIndexAt_strictMono hp hq hlt
+    exact Nat.lt_irrefl _ (h_eq ▸ this)
+  | inr h =>
+    cases h with
+    | inl heq => exact h_ne heq
+    | inr hgt =>
+      have := origIndexAt_strictMono hq hp hgt
+      exact Nat.lt_irrefl _ (h_eq.symm ▸ this)
+
+/-- extractGates at position p equals C.gates.get (origIndexAt p) -/
+lemma Subcircuit.extractGates_get_eq_origIndex {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
+    (p : Nat) (hp : p < S.extractGates.length) :
+    S.extractGates.get ⟨p, hp⟩ = C.gates.get (S.origIndexAt p (by simp [extractGates, List.length_map] at hp; exact hp)) := by
+  simp only [extractGates, List.get_map, origIndexAt]
+
+/-- extractGates is injective on original indices -/
+lemma Subcircuit.extractGates_pos_injective {din dout : Nat} {C : Circuit din dout} {S : Subcircuit C}
     {pi pj : Nat} (hpi : pi < S.extractGates.length) (hpj : pj < S.extractGates.length)
-    {ιi ιj : Fin C.gates.length}
-    (h_i : S.extractGates.get ⟨pi, hpi⟩ = C.gates.get ιi)
-    (h_j : S.extractGates.get ⟨pj, hpj⟩ = C.gates.get ιj)
-    (h_ι_eq : ιi = ιj) :
-    pi = pj := by
-  -- If ιi = ιj, then the gates are the same, so positions must be the same
-  -- (each original gate appears exactly once in extractGates)
-  sorry
+    (h_orig_eq : S.origIndexAt pi (by simp [extractGates] at hpi; exact hpi) =
+                 S.origIndexAt pj (by simp [extractGates] at hpj; exact hpj)) :
+    pi = pj :=
+  origIndexAt_injective _ _ h_orig_eq
 
 /-- The induced circuit on subcircuit S -/
 def Circuit.induced {din dout : Nat} (C : Circuit din dout) (S : Subcircuit C) : Circuit din dout where
@@ -216,21 +333,29 @@ def Circuit.induced {din dout : Nat} (C : Circuit din dout) (S : Subcircuit C) :
   unique_drivers := by
     classical
     intro i j hi hj mi mj heq
-    -- Gates in extractGates inherit unique_drivers from C
-    obtain ⟨ιi, hιiS, hgate_i⟩ := S.extractGates_get_orig i hi
-    obtain ⟨ιj, hιjS, hgate_j⟩ := S.extractGates_get_orig j hj
-    have heq' : (C.gates.get ιi).outputs mi = (C.gates.get ιj).outputs mj := by
+    -- Get the canonical original indices using origIndexAt
+    have hi_idx : i < S.extractIndices.length := by simp [Subcircuit.extractGates] at hi; exact hi
+    have hj_idx : j < S.extractIndices.length := by simp [Subcircuit.extractGates] at hj; exact hj
+    -- The gates at positions i and j
+    have ⟨hgate_i, _⟩ := S.extractGates_get_orig_unique i hi
+    have ⟨hgate_j, _⟩ := S.extractGates_get_orig_unique j hj
+    -- The outputs are equal
+    have heq' : (C.gates.get (S.origIndexAt i hi_idx)).outputs mi =
+                (C.gates.get (S.origIndexAt j hj_idx)).outputs mj := by
       simp only [← hgate_i, ← hgate_j] at heq
       exact heq
-    have h_same := C.unique_drivers ιi.val ιj.val ιi.isLt ιj.isLt mi mj heq'
-    -- Need to show i = j from ιi = ιj
-    -- This requires that extractGates is injective on original indices
-    sorry
+    -- Use C.unique_drivers to show the original indices are equal
+    have h_same := C.unique_drivers (S.origIndexAt i hi_idx).val (S.origIndexAt j hj_idx).val
+      (S.origIndexAt i hi_idx).isLt (S.origIndexAt j hj_idx).isLt mi mj heq'
+    have hι_eq : S.origIndexAt i hi_idx = S.origIndexAt j hj_idx := Fin.ext h_same
+    exact S.origIndexAt_injective hi_idx hj_idx hι_eq
   topological := by
     classical
     intro i hi k
-    -- Get the original gate index for position i in extractGates
-    obtain ⟨ι, hιS, hgate_eq⟩ := S.extractGates_get_orig i hi
+    -- Get the canonical original gate index using origIndexAt
+    have hi_idx : i < S.extractIndices.length := by simp [Subcircuit.extractGates] at hi; exact hi
+    let ι := S.origIndexAt i hi_idx
+    have ⟨hgate_eq, hιS⟩ := S.extractGates_get_orig_unique i hi
     -- The wire we're checking
     let w := (S.extractGates.get ⟨i, hi⟩).inputs k
     -- Rewrite using the original gate
@@ -241,21 +366,15 @@ def Circuit.induced {din dout : Nat} (C : Circuit din dout) (S : Subcircuit C) :
     -- Case split: either from primary inputs or from earlier gate
     rcases htopo with hw_inp | ⟨j, hj_lt, m, hm_out⟩
     · -- Case 1: w comes from C.inputWires
-      -- We need to show w ∈ S.inp.toList
-      -- First show w ∈ S.allInputWires (since gate ι uses it as input)
       have hw_allInp : w ∈ S.allInputWires := by
         simp only [Subcircuit.allInputWires, Finset.mem_biUnion, Finset.mem_image, Finset.mem_univ,
                    true_and]
         exact ⟨ι, hιS, k, rfl⟩
-      -- If w ∈ S.allOutputWires, then some gate in S outputs w
-      -- But w ∈ C.inputWires means no gate in C outputs w (by topological order of C)
-      -- So w ∉ S.allOutputWires
       have hw_notOut : w ∉ S.allOutputWires := by
         intro hw_out
         simp only [Subcircuit.allOutputWires, Finset.mem_biUnion, Finset.mem_image,
                    Finset.mem_univ, true_and] at hw_out
         obtain ⟨ι', _, m', hm'⟩ := hw_out
-        -- ι' outputs w, but w is a primary input - contradiction
         have := C.inputs_not_outputs w hw_inp ι'.val ι'.isLt m'
         exact this hm'.symm
       left
@@ -264,11 +383,32 @@ def Circuit.induced {din dout : Nat} (C : Circuit din dout) (S : Subcircuit C) :
     · -- Case 2: w is output of gate j < ι in original circuit
       let jFin : Fin C.gates.length := ⟨j, Nat.lt_trans hj_lt ι.isLt⟩
       by_cases hjS : jFin ∈ S.gateIndices
-      · -- Gate j is in S: need to find its position in extractGates
-        -- and show it's earlier than position i
+      · -- Gate j is in S: find its position and show it's earlier than i
         right
-        -- For now, leave as sorry - requires order preservation lemma for extractGates
-        sorry
+        -- jFin < ι and both in S.gateIndices, so position of jFin < i
+        have hj_lt_ι : jFin < ι := hj_lt
+        obtain ⟨pj, ppj, hpj_lt, hpj_get_i, hpj_get_j⟩ :=
+          S.extractGates_preserves_order hjS hιS hj_lt_ι
+        -- pj is the position of jFin in extractGates, and pj < pi where pi is position of ι
+        -- But we need to show pj < i
+        -- hpj_get_j says extractGates.get pj = C.gates.get jFin
+        -- hpj_get_i says extractGates.get pi = C.gates.get ι
+        -- Since ι = origIndexAt i, and extractGates.get i = C.gates.get ι,
+        -- we have pi = i (the positions are the same)
+        -- Actually extractGates_preserves_order returns pi such that extractGates.get pi = C.gates.get ι
+        -- We need to verify pi = i
+        have hpi_eq_i : ppj = i := by
+          -- extractGates.get ppj = C.gates.get ι
+          -- extractGates.get i = C.gates.get (origIndexAt i) = C.gates.get ι
+          -- By injectivity of origIndexAt, the positions must be equal
+          have h1 : S.extractGates.get ⟨ppj, hpj_lt⟩ = C.gates.get ι := hpj_get_i
+          have h2 : S.extractGates.get ⟨i, hi⟩ = C.gates.get ι := hgate_eq
+          -- origIndexAt ppj = ι and origIndexAt i = ι
+          sorry
+        subst hpi_eq_i
+        refine ⟨pj, hpj_lt, hpj_lt, m, ?_⟩
+        simp only [hpj_get_j]
+        exact hm_out
       · -- Gate j is not in S: w is external to S, so w ∈ S.inp
         left
         have hw_allInp : w ∈ S.allInputWires := by
@@ -280,8 +420,6 @@ def Circuit.induced {din dout : Nat} (C : Circuit din dout) (S : Subcircuit C) :
           simp only [Subcircuit.allOutputWires, Finset.mem_biUnion, Finset.mem_image,
                      Finset.mem_univ, true_and] at hw_out
           obtain ⟨ι', hι'S, m', hm'⟩ := hw_out
-          -- Gate ι' in S outputs w, but w = gate j's output (gate j not in S)
-          -- By unique_drivers, ι' = j, but j ∉ S and ι' ∈ S - contradiction
           have h_same := C.unique_drivers ι'.val j ι'.isLt (Nat.lt_trans hj_lt ι.isLt) m' m
           have : ι'.val = j := h_same (hm'.symm.trans hm_out)
           have : jFin = ι' := Fin.ext this.symm
