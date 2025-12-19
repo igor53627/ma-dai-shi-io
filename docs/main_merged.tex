@@ -1,0 +1,2630 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{unicode-math}
+\setmainfont{Latin Modern Roman}
+\setmathfont{Latin Modern Math}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{caption}
+\title{Reconstructed from PDF: 2025-307}
+\author{}
+\date{}
+\begin{document}
+\maketitle
+\tableofcontents
+\clearpage
+\section{Introduction}
+1 Introduction
+
+Indistinguishability obfuscation (iO) [GGH+13,JLS21] is a technique for hiding secrets in programs, such that given two functionally equivalent programs, their obfuscated counterparts are computationally indistinguishable. Because iO promises numerous theoretical and practical applications, the community has devoted much effort in the past decade to understand the feasibility of iO, culminating in recent ground-breaking results that showed how to construct iO from well-founded assumptions [JLS21]. In comparison, relatively little effort has been made to improve the efficiency of iO. To the best of our knowledge, all known circuit obfuscators incur polynomial overhead in the input length where overhead is measured in terms of the obfuscated program size and evaluation time. Not only so, since existing works largely focus on feasibility, they do not even care about quantifying the exact polynomial. Although there has been some progress in improving the efficiency of iO for Turing Machines (TMs) and Random Access Machines (RAMs) [AJS17,KLW15,BCG+18], these works mainly focus on making the obfuscated program size independent of the runtime of the original TM/RAM, and they do not remove the polynomial dependency on the input size. In this paper, we ask the following question:
+
+Can we construct indistinguishability obfuscation whose cost is quasi-linear in the circuit size?
+
+At first sight, there seems to be some inherent barrier towards achieving this. Specifically, it has been informally conjectured that there is an input-length barrier for any iO construction [JJ22]. As Jain and Jin described [JJ22], it seems that the security reduction for iO must check the equivalence of the two programs, and one way to achieve this is to iterate through all possible inputs, thus resulting in an exponential in input-length loss in the security proof. This loss requires that the underlying security primitives enjoy subexponential security such that they are secure against adversaries running in exponential in input-length time. The immediate efficiency implication is that the underlying cryptographic primitives must adopt a security parameter that is polynomial in the input length, and thus the resulting iO must suffer from polynomial in input-length efficiency loss. Fortunately, as Jain and Jin observed [JJ22], in typical applications of iO, the programs to be obfuscated often have a propositional logic proof of equivalence that is not too much larger than the circuit size itself. Assuming that such a mathematical proof of equivalence is provided, Jain and Jin showed how to circumvent the conjectured “input-length barrier” and avoid the exponential in input-size blowup in the security reduction. Jain and Jin, however, still did not focus on optimizing the efficiency of the iO— like all prior works, they were satisfied with polynomial overhead. Inspired by Jain and Jin [JJ22], we refine our question to the following:
+
+Assuming the existence of a propositional logic proof of equivalence, can we construct indistinguishability obfuscation whose cost is quasi-linear in the circuit size and the proof size?
+
+1.1 Our Results and Contributions
+
+\subsection{Our Results and Contributions}
+1.1 Our Results and Contributions
+
+Quasi-linear indistinguishability obfuscation with proofs of equivalence. We gave an affirmative answer to the above question. Specifically, we prove the following theorem:
+
+Theorem 1.1 (Quasi-linear iO with proof of equivalence). Assume the following hard problems:
+
+• polynomial (or subexponential resp.) hardness of Learning with Error (LWE);
+
+• sub-exponentially secure one-way functions (OWF); and
+
+• sub-exponentially secure indistinguishability obfuscation for circuits of size eOλ(1).
+
+Then, there exists a polynomially secure (or subexponentially secure resp.) indistinguishability obfuscator such that for circuit families of size at most Ncirc with propositional proof of size at most Nproof, the obfuscated program size and evaluation time1 is upper bounded by eOλ(Ncirc + Nproof), where eOλ(·) hides polylogarithmic terms and polynomial dependency on the security parameter λ.
+
+Clearly, the obfuscated program size and evaluation time has to be at least Ncirc. Thus, our result enjoys nearly optimal dependency on the circuit size. As Jain and Jin [JJ22] showed, in numerous applications of iO, the circuits we care about have propositional proofs of equivalence whose size is roughly the size of the original circuit, i.e., Nproof = eO(Ncirc). In such cases, the cost of our iO is simply eOλ(Ncirc). Our work leaves open the natural question whether we can remove the quasi-linear dependency on Nproof.
+
+Application: quasi-linear multi-input functional encryption. We show that our quasilinear indistinguishability obfuscator (assuming proofs of equivalence) implies Multi-Input Functional Encryption (MIFE) [GGG+14] with quasi-linear efficiency (also assuming proof of equivalence for the family of functions supported). Previous work has shown how to get single-input functional encryption with near optimal efficiency [JLL23]; however, to the best of our knowledge, no existing work can achieve MIFE whose efficiency is quasi-linearly dependent on the circuit size. In all previous constructions of MIFE [GGG+14,GJO16], the decryption time is polynomially dependent on the circuit size, and no work has even attempted to quantify how large the polynomial is. More concretely, we have the following theorem.
+
+Theorem 1.2 (MIFE with quasi-linear efficiency). Assume the same assumptions as Theorem 1.1 (the subexponential security version). Fix some message length L = poly(λ), and consider a family of t-ary functions F which can be represented by circuits of size at most Ncirc. Further, suppose that for any f ∈F, any subset of indices J ⊂[t], any two message vectors xJ, x′ J ∈(\{0, 1\}L)|J| such that f(xJ, ·) = f(x′ J, ·), the equivalence of f(xJ, ·) and f(x′ J, ·) can be shown with a length-Nproof proof in EF. Then, there exists a subexponentially secure MIFE scheme for the function family F whose key generation and decryption times are bounded by eOλ(Ncirc + Nproof + L · poly(t)).
+
+The requirement that the function family F admits a succinct EF proof of equivalence also seems inherent if the conjectured input-length barrier for iO is true [JJ22]. Specifically, we can construct iO from even MIFE for only 2-ary functions, and the construction is efficiency-preserving.
+
+Application: quasi-linear iO for Turing Machines. Until the work of Jain and Jin [JJ22], all prior constructions of iO for Turing Machines (TMs) [AJS17,BFK+19,JLL23] require knowledge of an a-priori bound on the input length at obfuscation time. In fact, as Jain and Jin explained [JJ22], there is a folklore belief that the bounded input length assumption is inherent due to reasons closely related to the aforementioned input-length barrier — see their work for a more detailed explanation [JJ22]. Interestingly, Jain and Jin [JJ22] showed, for the first time, how to circumvent this bounded input-length barrier by relying on the existence of proofs of equivalence between the TMs. Unfortunately, Jain and Jin’s iO for TMs construction is not efficient, and the evaluator’s running time is polynomially dependent on the original TM’s running time (and also polynomially dependent on the EF proof size when translated from the PV proof for a given input length). Using our quasi-linear circuit iO scheme (assuming proofs of equivalence), we show how to achieve iO for TMs with quasi-linear efficiency (also assuming proofs of equivalence). Like Jain
+
+1The evaluation time of the obfuscated program is characterized in the Random Access Machine (RAM) model.
+
+and Jin, our scheme also supports unbounded input length. Specifically, we prove the following theorem:
+
+Theorem 1.3 (iO for TMs with quasi-linear efficiency). Assume the same assumptions as Theorem 1.1 (the subexponential security version). Let M be a family of Turing Machines (TMs) whose description sizes are bounded by desc, whose running times are bounded by T(L) on lengthL inputs. Further, suppose that M admits size-Nproof(L) proofs of equivalence in EF. Then, there exists a subexponentially secure indistinguishability obfuscator for the family M such that the obfuscated program size is O(desc) + poly(λ), the evaluator’s runtime on a length-L input is eOλ(T(L) · poly(desc) + Nproof(L)), and the obfuscator’s runtime is desc · poly(λ). Further, the obfuscator need not know an a-priori bound on the input length.
+
+In the above, we say that M admits length-Nproof(·) EF proofs of equivalence, if for any two functionally equivalent TMs M, M′ ∈M, there exists a uniform machine Mprove that can generate a length-Nproof(L) proof of equivalence in EF for JMKL and JM′KL which represent the induced (uniform) circuits that describe the computation of M and M′ respectively on inputs of length L. Note that the work of Jain and Jin [JJ22] uses PV proofs between the TMs. In our work, we switch to using EF proofs for the TM-induced circuits when fixing some input length — this is because the size of the EF proofs is what directly contributes to the cost of the resulting iO scheme. By contrast, Jain and Jin [JJ22] only care about achieving polynomial efficiency so they do not need such fine-grained accounting. Jain and Jin show that given a PV proof of equivalence, one can expand it into an EF proof (for the induced circuits) when fixing an input length; further, the resulting EF proof can be generated by a uniform machine. However, the PV to EF conversion may introduce some extra blowup in the proof size, so we directly use the EF proof size for more fine-grained accounting.
+
+1.2 Technical Highlight
+
+\subsection{Technical Highlight}
+1.2 Technical Highlight
+
+Background: Jain and Jin’s blueprint. The elegant work of Jain and Jin [JJ22] showed how to avoid the input-length barrier for constructing iO, assuming mathematical proofs of equivalence. Their blueprint is as follows:
+
+1. First, Jain and Jin define the notion of a pair of s-equivalent circuits. Two functionally and topologically equivalent circuits C and C′ are said to be s-equivalent, iff they are otherwise identical except for a small subcircuit that contains at most s gates denoted S, and further, the subcircuits CS and C′ S are functionally equivalent where CS (or C′ S resp.) means the subcircuit of C (or C′ resp.) induced by the gates S.
+
+2. Jain and Jin then show that given two circuits C and C′ of size at most Ncirc with an Extended Frege (EF) proof of equivalence of size at most Nproof, they can construct padded circuits C = Pad(C, Ncirc, Nproof) and C ′ = Pad(C′, Ncirc, Nproof) with the following property:
+
+There exists a sequence of m = poly(Ncirc + Nproof) functionally and topologically equivalent circuits C1, C2, . . . , Cm beginning and ending at C1 = C and Cm = C ′ respectively, such that any adjacent pair of circuits Ci and Ci+1 are O(log(Ncirc + Nproof))-equivalent. (⋆)
+
+3. Additionally, Jain and Jin show how to construct a locally indistinguishable obfuscator (denoted LiO below) such that LiO(C1) and LiO(C2) only need to be indistinguishable if C1 and C2 are O(log(Ncirc + Nproof))-equivalent. This locally indistinguishable obfuscator adopts a
+
+gate-by-gate obfuscation approach: it first augments each gate g with some extra cryptographic checks and operations, resulting in an augmented gate Gateg, and then obfuscates the augmented gate Gateg. The cryptographic augmentation of the gate ensures that the adversary can only evaluate the circuit based on the prescribed topology, i.e., it cannot perform a mix-and-match attack by altering the wiring of the gates at evaluation time.
+
+4. Finally, the construction iO(·) := LiO(Pad(·, Ncirc + Nproof)) gives an obfuscation scheme that achieves indistinguishability for any two circuits of size at most Ncirc and with an EF proof of equivalence of size at most Nproof.
+
+Why Jain and Jin’s construction is inefficient. Jain and Jin’s construction suffers at least (Ncirc + Nproof)2 obfuscated program size and at least (Ncirc + Nproof)4+ε evaluation time (where ε > 0 is an arbitrarily small constant) when instantiated with the state-of-the-art non-interactive batched argument (BARG) scheme by Waters and Wu [WW22]. The inefficiency is due to the following reasons:
+
+1. First, the padded circuit’s size is at least Npadded := (Ncirc + Nproof)2, which implies that their obfuscated circuit size is at least Npadded := (Ncirc + Nproof)2, and
+
+2. An adversary may launch a mix-and-match-style attack by using intermediate results from one evaluation in another evaluation with different inputs to the circuit. To prevent such a mix-andmatch attack, Jain and Jin require that for every gate g, for every input and output wire w of the gate g, the evaluator hashes (using a suitable hashing scheme called somewhere statistically extractable hash) all wire values that w depends on, and then computes a proof of consistency that all input and output wires of the gate have hash values that correspond to a consistent set of wire values. The augmented gate Gateg expects to receive this consistency proof and always verifies its validity before continuing with the computation. To achieve this, for each of the up to O(Npadded) gates, their evaluator needs to compute O(1) non-interactive batched argument (BARG) proofs for up to Npadded circuits of size eO(1). This implies that their evaluator’s runtime is at least O(Npadded)·TBARG(Npadded, eO(1)), which is at least eO(N2 padded) = eO((Ncirc+ Nproof)4) if a BARG with ideal efficiency could be constructed. If we instantiate the BARG with the most efficient existing scheme [WW22], then TBARG(nidx, ncirc) = n1+ε idx poly(λ, ncirc) — consequently, the evaluator’s runtime would be eO((Ncirc + Nproof)4+ε).
+
+Our novel ideas. To avoid the inefficiencies in Jain and Jin’s construction, we devise the following new ideas.
+
+1. A quasi-linear padding algorithm. We devise a new padding algorithm that achieves the same property (⋆) achieved by Jain and Jin’s padding algorithm; however we avoid the quadratic blowup of Jain and Jin, and our padded circuits are of size only eO(Ncirc + Nproof).
+
+2. An efficient somewhere statistically extractable hash with prefix consistency proofs. We construct an efficient somewhere statistically extractable hash (SEH) scheme with consistency proofs. While Jain and Jin’s construction allows proving consistency on an arbitrary subset of indices, we observe that it is sufficient to be able to prove consistency on prefixes. This allows us to construct an SEH hash scheme without having to rely on generic BARGs to produce consistency proofs. In fact, we use the SEH construction of Hubacek and Wichs [HW15] in a non-black-box manner. Since their construction combines Fully Homomorphic Encryption
+
+(FHE) and a Merkle-tree-type structure, we can construct consistency proofs on prefixes by giving out the “hashes” on only logarithmically many nodes in the tree. Further, we show that the evaluator can compute all hashes on all gates as well as their consistency proofs in quasi-linear time, using an incremental algorithm.
+
+Combining the above ideas, we show that the obfuscated program and the evaluator runtime can both be reduced to eOλ(Ncirc + Nproof).
+
+Quasi-linear iO for Turing Machines. Jain and Jin’s iO for TM construction [JJ22] does not directly work for us. Informally speaking, in their construction, they obfuscate a universal gate, which, upon receiving an input length bound L and a gate index gidx, outputs the gidx-th augmented gate in the padded circuit, and then emulates the execution of the augmented gate. In other words, Jain and Jin implicitly assume that there is a uniform circuit that can generate the gidx-th gate of the padded circuit upon receiving the input length L and gate index gidx. Indeed, with Jain and Jin’s (inefficient) padded circuit, this is possible. By contrast, our quasi-linearly sized padded circuit involves a routing network, and the routing decisions of each gate inside the routing network cannot be locally determined without having a global view. We side-step this problem by adopting a different approach for obfuscating TMs. Specifically, we use a two-layered approach as described below. We consider a universal obfuscator UObf, which, upon receiving a specific input length L, computes the TM-induced circuit for input length L, pads the circuit, and then outputs a locally indistinguishable obfuscator LiO for the padded circuit. We then use a state-of-the-art RAM indistinguishability obfuscator [JLL23] denoted RAMObf to obfuscate UObf. Although the underlying RAMObf’s evaluation time has a polynomial dependence on the input length, it does not matter for us because the input length of UObf is small. Specifically, since the original TM’s running time is polynomially bounded in λ, the input length of UObf cannot exceed log2 λ. On the other hand, underlying RAMObf’s evaluation time is only quasi-linearly dependent on the original RAM’s running time which is important for ensuring the evaluation efficiency — in our case, the program UObf’s running time has a quasi-linear dependence on the original TM’s running time T and the EF proof size Nproof. We prove this two-layered construction secure in Section 7.4.
+
+MIFE with quasi-linear efficiency. Our MIFE construction is inspired by that of Goyal et al. [GJO16]. The hope is to use LiO in place of standard iO to get the dependence on the circuit size to be quasi-linear. However, it turns out that directly replacing iO with LiO is not enough for getting our result. Specifically, Goyal et al. [GJO16] suffer additionally from a polynomial dependence on the message length L, and we have to make some non-trivial modifications to improve the dependence on L to be quasi-linear. In Goyal et al. [GJO16], due to a large exponential loss in their security reduction, they require that the security parameters of the underlying cryptographic building blocks should be as large as poly(t · L) where t is the arity of the function and L is the length of each input message. To avoid this large blowup, one main new trick we used is to have a short PRF label (length-poly(λ) only) for each of the L bits and an extra short PRF label to assert the consistency of bits labels, instead of a long PRF label for whole message in Goyal et al.’s approach [GJO16]. Besides getting rid of the polynomial dependence on L, another technicality in our proofs is that in every step of the hybrid sequence that relies on the security of the obfuscator, we need to argue that the corresponding two programs to be obfuscated enjoy a succinct EF proof of equivalence.
+
+1.3 Additional Related Work
+
+\subsection{Additional Related Work}
+1.3 Additional Related Work
+
+We now review some additional related work.
+
+Gate by gate obfuscation. Besides Jain and Jin and our work, the gate-by-gate obfuscation approach has also been used in a couple prior works. The work of Fernando et al. [FSS+23] also adopts this approach to get a quasi-linear non-interactive anonymous router (NIAR) scheme. From a technical perspective, their work is akin to constructing a function-hiding multi-input functional encryption (MIFE) scheme for a “permutation network” functionality. The reason why they take a gate-by-gate obfuscation approach is to get quasi-linear efficiency, since using prior iO schemes to directly obfuscate the permutation network would result in polynomial overhead. Although with our new quasi-linear iO with proof of equivalence, it might be possible to simplify the construction of Fernando et al. [FSS+23] by directly obfuscating the entire permutation network, Fernando et al. [FSS+23]’s result is still better from a theoretical perspective since they get their result from polynomially secure hardness assumptions (whereas our paper relies on subexponential assumptions). Partly, this is because Fernando et al.’s proof is tightly coupled with the special functionality of a permutation network whereas our approach works for generic functionalities. Canetti et al. [CLTV15] also used a network of obfuscations, and their goal is to build leveled fully homomorphic encryption from iO. However, the proof techniques in Jain and Jin [JJ22] and our work are of a different nature from Canetti et al. [CLTV15] since Canetti et al. aims to build a different primitive.
+
+Somewhere statistically binding hash. Our somewhat extractable hash with prefix consistency combines a Merkle tree with Fully Homomorphic Encryption (FHE), inspired by the elegant work of Hubacek and Wichs [HW15]. Brakerski et al. [BBK+23] and Freitag et al. [FWW23] propose a related notion called function-binding extractable hash functions. Specifically, these works allow running the setup with a function f, such that the resulting hash will be statistically binding to f(x) where x is the input of the hash. By combining Merkle tree and FHE, the two works show how to construct function-binding extractable hash for 1) disjunctions of block functions; and 2) bit-fixing predicates. Despite the similarity in techniques, our extractable hash has a different abstraction from Brakerski et al. [BBK+23] and Freitag et al. [FWW23], since what we want is not to statistically bind to some function of the input, but to 1) statistically bind to a set of indices; and 2) support an efficient proof mechanism that the inputs of two hash digests share a common prefix. Importantly, we also need an efficient batched algorithm that generates the hashes, consistency proofs, and opening proofs on all wires of the circuit in time that is quasilinear in the circuit size.
+
+2 Preliminaries
+
+\section{Preliminaries}
+2 Preliminaries
+
+2.1 Circuits
+
+\subsection{Circuits}
+2.1 Circuits
+
+In this work, we view circuits as directed acyclic graphs, where each vertex represents a gate, and each edge represents a wire. We say two circuits are topological equivalent if their graph representations are identical, while the operation of each gate may be different. We say a circuit has din fan-in, if each gate has at most din input wires; and dout fan-out if each gate has at most dout output wires. Let C be a circuit, a subcircuit S of C includes a subset of all gates. We can define the input and output wires of S in a similar way:
+
+• Input Wire: We say a input wire of some gate g ∈S is an input wire of S, if it isn’t an output wire of another gate g′ ∈S. We denote the set of input wires of S as inp(S).
+
+• Output Wire: We say an output wire of some gate g ∈S is an output wire of S, if it isn’t an input wire of another gate g′ ∈S. We denote the set of output wires of S as out(S).
+
+• Functionality: Circuit C induces a circuit CS : \{0, 1\}|inp(S)| →\{0, 1\}|out(S)| for subcircuit the S.
+
+2.2 Extended Frege Proofs
+
+\subsection{Extended Frege Proofs}
+2.2 Extended Frege Proofs
+
+An extended Frege proof system (EF) is a propositional logic system defined as follows. The system can be described with variables, formulas, and inference rules. Variables are represented by letters, and they can take values from \{True, False\}. Formulas are defined inductively: any variable is a formula; and if u and v are formulas, then u →v and ¬u are formulas where →denotes “implies” and ¬ denotes negation. With the operators →and ¬, we can also define other boolean operators such as ∧, ∨, and ⊕. The inference rules include:
+
+• Axiom 1: ⊢P →(Q →P);
+
+• Axiom 2: ⊢(P →(Q →R)) →((P →Q) →(P →R));
+
+• Axiom 3: ⊢¬¬P →P;
+
+• Modus Ponens: P, P →Q ⊢Q.
+
+Notation for substitution. A substitution σ is a map from the set of variables to the set of formulas. If A is a formula, then the result of applying σ to A is denoted as Aσ, which is a formula obtained by replacing each occurrence of the variables in A by its image under σ. For example, let A = P →(Q →P) and let a substitution σ be P 7→a ∧b, Q 7→a ∨b, then Aσ = (a ∧b) →((a ∨b) →(a ∧b)).
+
+Definition of proof. An EF proof is a sequence of formulas (also called proof lines) θ1, . . . , θNproof where each θi is a formula of one of the following forms:
+
+1. Inference: θi = Bσ which is derived from form A1σ, . . . , Akσ ⊢Bσ (or simply ⊢Bσ) given some inference rule A1, . . . , Ak ⊢B (or simply ⊢B) defined above and some substitution σ. Moreover, A1σ, . . . , Akσ must have appeared earlier in θ1, . . . , θi−1.
+
+2. Extension: of the form v ↔A, where A is some formula, and the variable v has not appeared in θ1, . . . , θi−1. Specifically, a ↔b is the abbreviation of (a →b) ∧(b →a).
+
+If we do not allow the extension rule above, i.e., if we do not allow a proof line θi to be of the form v ↔A, the resulting system is commonly called the Frege system. However, the Frege system has the limitation that each proof line must be a formula, and expressing computation as formulas may not be efficient. The extension v ↔A allowed by EF effectively allows us to represent each proof line as a circuit rather than a formula.
+
+Assumption on the length of a proof line. Without loss of generality, we may assume that in an EF proof, each proof line is of constant length. If not, we can always use the extension rule to introduce intermediate variables and break up the proof into constant-sized proof lines, and this transformation causes only a constant blowup in the total proof size. With this assumption, we can measure the size or length of an EF proof simply by the number of proof lines.
+
+Expressing an EF proof as a circuit. Conversely, since the extension v ↔A is introduced such that we can express each proof line as a circuit rather than formula. In other words, given an EF proof, we can naturally encode the computation of the proof as a circuit, leading to the following lemma.
+
+Lemma 2.1. Given a proof (θ1, . . . , θNproof) in EF of size Nproof, we can construct a circuit with fan-in 2 and unbounded fan-out, where the inputs represent the variables, and there are Nproof output wires, where the i-th output wire corresponds to θi in the following sense:
+
+• if θi = Bσ is obtained from some inference rule A1σ, . . . , Akσ ⊢Bσ, then the i-th output wire encodes Bσ (note also that A1σ, . . . , Akσ must correspond to some earlier output wires);
+
+• else if θi is an extension of the form v ↔A, then the i-th output wire constantly outputs 1.
+
+Further, the circuit satisfies the following:
+
+1. its circuit size is O(Nproof);
+
+2. given any proof line θj = Bσ obtained from2 A1σ, . . . , Akσ ⊢Bσ (or from ⊢Bσ) where σ denotes the substitution P1 7→Q1, . . . , Pℓ7→Qℓ, let wA1σ, . . . , wAkσ, wBσ denote the wires of the circuit that represent the formulas A1σ, . . . , Akσ, Bσ, respectively. Then, there is a subcircuit of constant size such that its inputs represent the formulas Q1, . . . , Qℓ, and its outputs are the wires wA1σ, . . . , wAkσ, and wBσ. Further, while the input wires Q1, . . . , Qℓmay be consumed arbitrarily many times in this subcircuit, all gates in this subcircuit have fanout only 1.
+
+Proof. We can view an EF proof in the most natural manner as a constant fan-in, unbounded fanout circuit that computes all the formulas in the proof. The circuit has constant fan-in, because all formulas are of constant size in the proof. However, the circuit may have unbounded fan-out, because each variable defined may be referenced an arbitrary number of times. Given a circuit is constant fan-in and unbounded fan-out, we can always convert it to a circuit with fan-in 2 and unbounded fan-out with only a constant blowup in the circuit size. To complete the proof, we want to make sure that in the subcircuit that computes A1σ, . . . , Akσ, Bσ from Q1, . . . , Qℓ, all gates have fan-out 1 while the input wires Q1, . . . , Qℓcan still be consumed arbitrarily many times. Since this subcircuit is of constant size, we can always perform a transformation to make sure every gate has only a single fanout and fan-in 2, at the cost of a constant blowup in size. In particular, if any gate’s output wire needs to be consumed again, we can copy the entire circuit gadget that led to this output wire again, at the cost of a higher fan-out for the input wires Q1, . . . , Qℓ, and more gates in the subcircuit.
+
+Proof of equivalence for two circuits. Given a circuit C whose input wires are labeled x := (x1, . . . , xn), for each gate in C whose input wires are labeled a1, . . . , ak and whose output wires are labeled b1, . . . , bm, we can write down a set of extensions: for each j ∈[m], bj ↔fj(a1, . . . , ak). Here we use the labels of the wires to directly name the variables in the extensions. We use the notation Prop[C](x) to denote all extensions obtained in this manner for circuit C and input x. Given two circuits C and C′ with the same number of inputs, a propositional proof of equivalence between C and C′ is an EF proof that contains the following proof lines (we assume that all other wires in the two circuits have distinct labels except they share the same input wires):
+
+• The proof includes the extensions Prop[C](x) and Prop[C′](x);
+
+2k must be a constant by our formulation.
+
+• Suppose that o1, . . . , ok and o′ 1, . . . , o′ k denote the output wires of C and C′ respectively, then the proof includes the lines o1 ↔o′ 1, . . ., ok ↔o′ k.
+
+The following lemma is implied by Lemma 2.1.
+
+Lemma 2.2. Let c > 0 be an appropriate universal constant. Given two circuits C and C′ of maximum size Ncirc, and an EF proof of equivalence denoted (θ1, . . . , θNproof) of size Nproof, there is a circuit denoted Cproof with fan-in 2 and unbounded fanout that satisfies the following:
+
+• Cproof has exactly c · Nproof number of gates;
+
+• Cproof’s inputs are the wires of C and C′, padded with filler input wires to exactly 2Ncirc input wires;
+
+• Cproof’s outputs correspond to the proof lines in the same manner as Lemma 2.1. Without loss of generality, we may assume that if we sort the gates of Cproof in a topological order, the output wires of Cproof are the output wires of the last Nproof gates.
+
+• Consider the union circuit Cunion = C ∪C′ ∪Cproof where C and C′ share the same input wires, and Cproof’s input wires are directly connected to the wires of C and C′. Then, property 2 of Lemma 2.1 holds for Cunion, where the subcircuit may involve gates in C, C′ and Cproof.
+
+Given two identical circuits, we can construct a trivial EF proof of equivalence as stated in the lemma below.
+
+Lemma 2.3 (Trivial proof of equivalence for identical circuits). Given two identical circuits C and C of size at most Ncirc, there is an EF proof of equivalence of size O(Ncirc).
+
+2.3 s-Equivalent Circuits
+
+\subsection{s-Equivalent Circuits}
+2.3 s-Equivalent Circuits
+
+We define the notion of s-equivalence and transitive s-equivalence (a.k.a. δ-equivalence and ∆− equivalence in Jain and Jin [JJ22]3). Intuitively, two circuits are s-equivalent, if they are almost identical except a small subcircuit of size at most s:
+
+Definition 1 (s-equivalence). We say two topologically equivalent circuits C and C′ are s-equivalent (via some subcircuit S), there is some small subcircuit S of size at most s, such that all gates outside S are identical in C and C′, and moreover, CS and C′ S are functionally equivalent, where CS and C′ S denote the induced subcircuit on the set of gates S for C and C′, respectively.
+
+Two topologically identical circuits are transitively s-equivalent, if one can be transformed to another by a polynomially long sequence of s-equivalent transformations:
+
+Definition 2 (Transitive s-equivalence). We say two topological equivalent circuits C and C′ (each of size n) are transitively s-equivalent via ℓhybrids, if there exist ℓcircuits C1, C2, . . . , Cℓ, such that C1 = C, Cℓ= C′, and for each i ∈[ℓ−1], Ci and Ci+1 are s-equivalent. In particular, if ℓ(n) is polynomially bounded in n, we abbreviate and say that C and C′ are transitively s-equivalent.
+
+Note that by Definition 1 and Definition 2, any two circuits that are s-equivalent or transitively s-equivalent must be functionally equivalent.
+
+3We find it convenient to rename “δ-equivalence and ∆-equivalence parametrized by subcircuit size s” to simply s-equivalence and transitive s-equivalence because 1) δ and ∆are actually not a parameter in their definitions [JJ22], and 2) δ-equivalence and ∆-equivalence cannot be distinguished in spoken language.
+
+2.4 Routing Network
+
+\subsection{Routing Network}
+2.4 Routing Network
+
+A routing network is a circuit which receives n items as input, denoted (x1, . . . , xn), and outputs n items where each output is one of the inputs, and duplicate outputs are allowed. We consider a routing network where each gate receives two items denoted (y0, y1), and it has two outputs chosen among four possible configurations \{(y0, y0), (y0, y1), (y1, y0), (y1, y1)\}. We can imagine that the n inputs of a routing network correspond to n sources, and the n outputs correspond to n consumers. Each consumer wants to consume one of the n input items, and it is possible that multiple consumers want the same item. A routing network should satisfy the following property: no matter what the consumers want, it should be possible to configure the gates in the network such that all n consumers are satisfied.
+
+Theorem 2.4 ( [BCP15]). There exist a routing network with n inputs and n outputs which satisfies following properties:
+
+• The routing network is a circuit of fixed topology that only depends on n with size O(n log n) and depth O(log n) (namely, the item only traverses through O(log n) gates), and the topology can be determined in O(n log n) time without knowledge of consumers.
+
+• Given demands of every consumer, the configuration of each gate can be determined in total time O(n log n).
+
+3 Transitive Logarithmic Equivalence from Propositional Proofs
+
+\section{Transitive Logarithmic Equivalence from Propositional Proofs}
+3 Transitive Logarithmic Equivalence from Propositional Proofs
+
+3.1 Notations and Assumptions
+
+\subsection{Notations and Assumptions}
+3.1 Notations and Assumptions
+
+Assumptions on the circuit. Without loss of generality, we may make the following assumptions on the circuit. Without loss of generality, we may assume that in the input circuit C, each gate is of fan-in 2 and unbounded fan-out. Although a gate may have unbounded fan-out, we assume that each gate computes only a single output value which may later be consumed arbitrarily many times. We require the output circuit (i.e., the padded circuit) to have constant fan-in and constant fan-out. We also assume that the input circuit C has exactly Ncirc gates, and when sorted in topological order, the final output wire of the circuit C is the first output of the last gate. If C actually has fewer than Ncirc, we can always pad it with some filler gates (whose output wires are unconsumed) to exactly Ncirc gates. Unless otherwise noted, we measure the size of the circuit by the number of wires it has (including input and output wires), since the number of gates is upper bounded by the number of wires. Sometimes if a circuit has some input wires that are not consumed by any gates, it is possible that the number of wires is much larger than the number of gates. Whenever we want to count the number of gates rather than wires, we will say so explicitly.
+
+3.2 Padding Algorithm
+
+\subsection{Padding Algorithm}
+3.2 Padding Algorithm
+
+Let C be a circuit family whose size is bounded by Ncirc. Given two equivalent circuits C1, C2 ∈C with an EF proof of equivalence of maximum size Nproof, we define a padding algorithm denoted Pad, such that 1) for b ∈\{1, 2\}, Cb and Pad(Cb, Ncirc, Nproof) are functionally equivalent; and 2) Pad(C1, Ncirc, Nproof) and Pad(C2, Ncirc, Nproof) are transitively O(log(Ncirc + Nproof))-equivalent.
+
+Routing network Not needed Currently active
+
+next regular gate
+
+to be added
+
+Sel
+
+Sel
+
+in0 in1 … … in4 in5 out0 out1 … …
+
+inputs
+
+output wires
+
+outputs of regular gates
+
+… …
+
+\begin{figure}[t]
+\centering
+% Option A (robust): include cropped vector PDF
+\includegraphics[width=0.95\linewidth]{figures\_pdf/fig\_p014\_01.pdf}
+% Option B (editable): TikZ approximation (may need cleanup)
+%\input{figures\_tikz/fig\_p014\_01.tex}
+\caption{Figure 1: PadSingle algorithm. Each routing network’s output wires on the right. The vertical}
+\end{figure}
+ wires simply pass through and are fed into logarithmically many routing networks. In the actual circuit, we will use a logarithmically sized binary tree (called a copy gadget) to copy each wire logarithmically many times such that the resulting circuit has constant fan-out.
+
+3.2.1 Subroutine PadSingle
+
+\subsubsection{Subroutine PadSingle}
+3.2.1 Subroutine PadSingle
+
+The PadSingle(C, N) subroutine takes a circuit C with an a-priori upper bound N on the number of gates, and converts C to a circuit of a fixed topology that depends only on N and the number of input wires of C. Further, the output circuit is eO(N) in size.
+
+Our PadSingle algorithm. We will sort all gates in C (henceforth called regular gates to distinguish them from the routing network gates) in a topological order, and add them one by one to the output circuit in a topological order like in Figure 1. Whenever we add the next gate, each of its two input wires can choose among 1) all inputs to the circuit, and 2) all outputs of previously added gates. The na¨ıve approach, which is also Jain and Jin’s approach [JJ22], is to have a selector gadget for each input wire, to choose among all the possible wires as mentioned above — this can be accomplished by building a binary tree of pairwise selector gates. However, since there can be up to Ncirc wires to choose from, this na¨ıve approach would result in a quadratic blowup in the output circuit size. We will use the help of routing networks and an idea inspired by Bentley and Saxe’s hierarchical data structure [BS80] to accomplish the same but more efficiently, resulting in a quasi-linear-sized padded circuit. The idea is illustrated in Figure 1. More concretely,
+
+1. Imagine that we have a pool of wires — one can view a wire as a variable that is either an input to the circuit, or an output of a previous gate. Initially, this pool contains only input wires to the circuit C. As we add regular gates one by one in a topological order, we add each regular gate’s output wires to the pool in order, and each output wire is replicated twice when being added to the pool.
+
+2. Whenever the pool accumulates the next batch of 2i wires, we will create a new routing network to route the correct signal to the input selectors of the next 2i−1 regular gates in order.
+
+In Figure 1, we show each wire to be fed into logarithmically many routing networks, but in the actual construction, we can use a binary-tree of logarithmic size (called a copy gadget) to
+
+copy each wire logarithmically many times, so that the resulting circuit has constant fan-out.
+
+3. For each gate that is being added next, its two input wires are connected to the output of a selector gadget, which selects from logarithmically many wires output from the routing networks. Such a selector gadget can be build using a binary tree of pairwise selector gates. Since the routing networks can route the input wires arbitrarily, essentially it is possible for each input wire to select from all wires in the pool so far.
+
+4. Configure all routing networks gates such that all regular gates’ input selectors receive the correct signal.
+
+5. Finally, define the output of C to be the first output wire of the last regular gate in the padded circuit.
+
+Note that since the routing network we use may replicate an input signal multiple times, this allows us to support an input circuit C with potentially unbounded fan-out. When N is a power of 2, it is not hard to see that all output wires of routing networks will be consumed by the input selector of some regular gate (assuming that in the above Step 2, we stop creating new routing networks when there are no more gates to add).
+
+Efficiency. Suppose we use a routing network that is O(n log n) in size for n inputs. In the above PadSingle(C, N) algorithm, we consume a routing network of size O(2i log(2i)) every time we gain wires 2i wires in the pool. Therefore, the total size of the padded circuit is upper bounded by
+
+log N X
+
+i=1 2i log(2i) · N
+
+2i = O(N log2 N)
+
+3.2.2 The Pad Algorithm
+
+\subsubsection{The Pad Algorithm}
+3.2.2 The Pad Algorithm
+
+We now describe the algorithm Pad(C, Ncirc, Nproof). The padded circuit is constructed as follows — see also Figure 2:
+
+• Call eC1 := PadSingle(C, Ncirc) to convert the circuit C to a fixed topology.
+
+• Call eC2 := PadSingle(1, Ncirc) to create a placeholder circuit of a fixed topology. The circuits eC1 and eC2 share the same input wires. The notation 1 denotes a filler circuit of size at most Ncirc, with the same number of inputs as C, and where all gates always output 1.
+
+• Call eCproof = PadSingle(1, c · (Nproof + Ncirc)) to create a placeholder circuit of a fixed topology, where the notation 1 denotes a filler circuit with at most c · (Nproof + Ncirc) gates, with 2Ncirc number of input wires, and where all gates always output 1. Recall that c is a universal constant related to Lemma 2.2 and Lemma 2.3 — we can take c to be the products of the constants in Lemma 2.2 and Lemma 2.3.
+
+The input wires of eCproof contain 1) all input wires of eC1 and eC2 and 2) all output wires of regular gates in eC1 and eC2. The outputs of eCproof are defined as the outputs of the last Nproof + Ncirc regular gates added to eCproof. At this moment, all these regular gates constantly output 1, and thus all outputs of eCproof must be 1.
+
+• Then, we compute the AND (denoted outproof in Figure 2) of all output wires of eCproof. This can be accomplished by building a binary tree in which each node computes a pairwise AND.
+
+PadSingle(C, Ncirc) PadSingle(1, Ncirc)
+
+PadSingle(1, c·(Nproof+ Ncirc)) out1 out2
+
+AND
+
+outproof AND out1
+
+outproof
+
+\begin{figure}[t]
+\centering
+% Option A (robust): include cropped vector PDF
+\includegraphics[width=0.95\linewidth]{figures\_pdf/fig\_p016\_01.pdf}
+% Option B (editable): TikZ approximation (may need cleanup)
+%\input{figures\_tikz/fig\_p016\_01.tex}
+\caption{Figure 2: Pad(C, Ncirc, Nproof) algorithm. The notation 1 denotes a filler circuit of appropriate}
+\end{figure}
+ size in which all gates always output 1. The AND-tree is a binary tree of AND gates.
+
+• Let out1 and out2 denote the output bits of eC1 and eC2 respectively, and let outproof denote the output wire of the above step. The padded circuit has one final gate that takes out1, out2, and outproof as inputs, and outputs (outproof AND out1). As mentioned earlier, since the outputs of eCproof must be 1, the padded circuit must output out1 at this moment.
+
+3.3 Proof of Transitive O(log(Ncirc + Nproof))-Equivalence
+
+\subsection{Proof of Transitive O((Ncirc + Nproof))-Equivalence}
+3.3 Proof of Transitive O(log(Ncirc + Nproof))-Equivalence
+
+We want to show that Pad(C1, Ncirc, Nproof) and Pad(C2, Ncirc, Nproof) are transitively O(log(Ncirc+ Nproof))-equivalent. This means that we need to construct a sequence of intermediate hybrid circuits that are all functionally equivalent and have the same topology. Moreover, the number of gates with different configurations in any two adjacent hybrid circuits is bounded by O(log(Ncirc + Nproof)), and the subcircuit formed by these differing gates are functionally equivalent in the two adjacent hybrid circuits. Table 1 shows the sequence of outer hybrids. We now explain the notation. We can represent the initial circuit Pad(C1, Ncirc, Nproof) using a tuple
+
+Pad(C1, Ncirc, Nproof) :=  eC1(C1), eC2(1), eCproof(1), (outproof AND out1) 
+
+This means that the eC1 part is obtained through PadSingle(C1, Ncirc), the eC2 part is obtained through PadSingle(1, Ncirc), the eCproof part is obtained through PadSingle(1, c · Nproof), and the final gate computes outproof AND out1. The AND-tree part of the circuit will be identical in all outer hybrids, so we omit it in the tuple. The notation for the rest of Table 1 is similarly defined, and the part that we modify in the next outer hybrid is highlighted in blue.
+
+Table 1: Top-level sequence of hybrid circuits for transitively O(log n)-equivalence proof.
+
+Pad(C1, Ncirc, Nproof) : eC1(C1), eC2(1), eCproof(1), (outproof AND out1) Grow C2: ⇓ eC1(C1), eC2(C2), eCproof(1), (outproof AND out1) Grow proof for C1 = C2: ⇓ eC1(C1), eC2(C2), eCproof([C1 = C2]), (outproof AND out1) Select second output: ⇓ eC1(C1), eC2(C2), eCproof([C1 = C2]), (outproof AND out2) Shrink proof: ⇓ eC1(C1), eC2(C2), eCproof(1), (outproof AND out2) Replace C1 with C2: ⇓ eC1(C2), eC2(C2), eCproof(1), (outproof AND out2) Grow proof for C2 = C2 ⇓ eC1(C2), eC2(C2), eCproof([C2 = C2]), (outproof AND out2) Select first output ⇓ eC1(C2), eC2(C2), eCproof([C2 = C2]), (outproof AND out1) Shrink proof ⇓ eC1(C2), eC2(C2), eCproof(1), (outproof AND out1) Shrink C2 ⇓ Pad(C2, Ncirc, Nproof) eC1(C2), eC2(1), eCproof(1), (outproof AND out1)
+
+To complete the proof, we need a sequence of inner hybrids to switch from each outer hybrid to the next one, as described below.
+
+Grow C2. We want to change from ( eC1(C1), eC2(1), eCproof(1), (outproof AND out1)) to ( eC1(C1), eC2(C2), eCproof(1), (outproof AND out1)). To do so, we need to reconfigure the following gates based on C2 — we will first describe the goal, and the order in which we make the reconfiguration (i.e., the sequence of inner hybrids) will be described after that:
+
+• configure all gates in the routing networks in eC2 to encode the right routing decision;
+
+• configure all gates in the input selector gadgets for all regular gates corresponding in eC2 to select the right input wire; and
+
+• configure all regular gates in eC2 to compute the correct function.
+
+We will accomplish the above reconfiguration through a sequence of inner hybrids as described below. Without loss of generality, we may assume the following:
+
+• In PadSingle(1, Ncirc), and PadSingle(1, c · Nproof), all gates, including the ones in the routing networks and the input-selector gadgets of the regular gates, always output 1 on all output wires;
+
+• Ncirc is a power of 2, such that all wires output from routing networks in eC2 are consumed by some regular gate in eC2. Recall also that the output wires of all regular gates in eC2 are fed into the eCproof part as input. This implies that when Ncirc is a power of 2, all output wires of any gate in eC2 must be consumed by some children gate, i.e., there is no loose output wire in eC2.
+
+A1σ A2σ Bσ
+
+★
+
+Q1 Q2 Q3
+
+Path through routing network
+
+Path from leaf to root
+
+★ Regular gate being reconfigured
+
+Regular gate
+
+AND-tree
+
+(a) Reconfiguring an output gate in eCproof. The output gate being configured is obtained from A1σ, A2σ ⊢Bσ where σ is the substitution P1 7→Q1, P2 7→Q2, P3 7→Q3. The differing subcircuit consists of all gates on the depicted paths.
+
+=
+
+?
+
+out1 out2
+
+outproof AND out1
+
+(b) Select out2 instead of out1. The differing subcircuit consists of all gates on the depicted paths and the final gate.
+
+\begin{figure}[t]
+\centering
+% Option A (robust): include cropped vector PDF
+\includegraphics[width=0.95\linewidth]{figures\_pdf/fig\_p018\_01.pdf}
+% Option B (editable): TikZ approximation (may need cleanup)
+%\input{figures\_tikz/fig\_p018\_01.tex}
+\caption{Figure 3: The differing subcircuit in the “grow proof” and “select second output” steps.}
+\end{figure}
+
+Specifically, we will sort all gates in eC2 in a topological order. For each gate in a topological order, we will switch it to the right configuration. The number of inner-hybrids is equal to the number of gates in eC2. The differing subcircuit S between any adjacent pair of inner-hybrids contains the gate G∗currently being reconfigured, and any immediate children gates of G∗(i.e., any gate which has an input wire connected to an output wire of G∗). It is easy to see that the differing subcircuit S is O(1) in size. We argue that S is functionally equivalent between the adjacent pair of inner-hybrids. Specifically, the children nodes of G∗can only be
+
+1. a gate inside eC2 — in this case the gate must constantly output 1 since we are making the switch in topological order;
+
+2. a filler gate that constantly outputs 1 in the eCproof part; or
+
+3. the final (outproof AND out1) gate.
+
+Therefore, each output wire of the subcircuit S either outputs 1 constantly, or its value is (outproof AND out1) which is not dependent on any output wire from the eC2 part.
+
+Grow proof for C1 = C2. Next, we want to grow the proof of equivalence denoted eCproof([C1 = C2]) in the eCproof part of the circuit. We use the notation eCproof([C1 = C2]) to denote the outcome of PadSingle(Cproof, c·(Nproof +Ncirc)) where Cproof is the circuit corresponding to Lemma 2.2 that encodes the EF proof of C1 and C2’s equivalence. We accomplish this through a sequence of inner hybrids.
+
+• Let C′ proof be the same as Cproof, except that output gates constantly output 1. First, we will
+
+change the eCproof part to encode PadSingle(C′ proof, c·(Nproof +Ncirc)). Without loss of generality,
+
+we may assume that initially, in eCproof(1) := PadSingle(1, c·(Nproof +Ncirc)), all gates constantly output 1.
+
+To make this switch, we can topologically sort all gates except output gates in eCproof, and in the topological order, we reconfigure each gate to the correct configuration. This would incur as many inner hybrids as the number of gates reconfigured. Using the same argument as the “Grow C2” part, any pair of adjacent hybrids have a differing subcircuit of size O(1) which is functionally equivalent across the two hybrids, since the all children gates to the gate currently being reconfigured constantly output 1.
+
+• At this moment, all output gates in eCproof constantly output 1, since each output gate in eCproof corresponds to an output gate in C′ proof. Next, we want to switch them one by one to the correct output. Recall that each output wire of Cproof encodes the conclusion part (i.e., Bσ) of some proof line of the form A1σ, . . . , Akσ ⊢Bσ (or simply ⊢Bσ). Now, in the order that the proof lines show up in the EF proof, we want to switch the corresponding output gate in eCproof to the correct configuration (rather than constantly outputting 1). Here, the number of inner hybrids is Nproof + Ncirc.
+
+It suffices to argue that between any pair of adjacent hybrids, there is a small differing subcircuit (henceforth denoted S) of size O(log Nproof + log Ncirc) which preserves functionality across the two hybrids. We depict this differing subcircuit S in Figure 3a, which is constructed as follows. Suppose we are reconfiguring an output gate henceforth denoted G∗whose output wire should encode Bσ that is the conclusion of some proof line A1σ, . . . , Akσ ⊢Bσ, and σ is the substitution P1 7→Q1, . . . , Pℓ7→Qℓ. Due to Lemma 2.2, if we consider the union circuit C1 ∪C2 ∪Cproof, there is a constant-size subcircuit whose inputs correspond to Q1, . . . , Qℓand whose outputs encode A1σ, . . . , Akσ, Bσ. For each gate in C1∪C2∪Cproof, there is a corresponding regular gate in the padded counterpart eC1 ∪eC2 ∪eCproof (depicted as the blue gates in Figure 3a). However, in the padded version eC1 ∪eC2 ∪eCproof, a regular gate’s output wires are not directly fed into the next regular gate as input. Instead, each regular gate’s output wire needs to traverse 1) a copy gadget to make logarithmically many copies of the wire to feed into different routing networks; 2) a routing network; and 3) an input selector gadget for selecting a correct signal for the next regular gate. Therefore, in the padded eC1 ∪eC2 ∪eCproof, the wiring between the blue regular gates in Figure 3a and Q1, . . . , Qℓis now replaced with a path which traverses a copy gadget, a routing network, and an input selector (depicted as the orange paths in Figure 3a). Further, the output wires encoding A1σ, . . . , Akσ, Bσ will travel through some path in the AND-tree (depicted as the green paths in Figure 3a). The differing subcircuit S is defined as all gates the orange and green paths traverse in Figure 3a. It is not hard to see that S has size at most O(log Nproof + log Ncirc).
+
+We now argue that this differing subcircuit S is functionally equivalent across the two adjacent hybrids when we change the output of G∗from constantly 1 to the correct output. Note that earlier, we must have reconfigured the output gates that encode A1σ, . . . , Akσ, and these values are already part of the AND-tree. Since the EF proof line A1σ, . . . , Akσ, Bσ holds, when we change G∗’s output from 1 to the correct value Bσ, it does not change the outcome of the AND-tree. Finally, S’s output wires also include the other output wire of any gate that belongs to the copy gadget or the routing network that is not consumed by gates of the subcircuit S. It is easy to see that the values on these output wires are also functionally equivalent across the two adjacent hybrids. Note that the blue regular gates have a single fan-out only due to Lemma 2.1 and Lemma 2.2.
+
+Select second output. Next, we want to change the final gate from (outproof AND out1) to (outproof AND out2). The differing subcircuit S is depicted in Figure 3b. The blue gate denotes
+
+the regular gate that computes whether out1 = out2. Its output must be the conclusion of the final proof line, and thus it is fed into the AND tree. Just like Figure 3a, an orange path is a path through a routing network and input selector, and a green path is a path from leaf to root in the AND-tree. The differing subcircuit S consists of all gates that the orange and green paths travel through as well as the final gate (outproof AND out1) or (outproof AND out2). It is not hard to see that S is functionally equivalement before and after the switch, and moreover the size S is at most O(log Nproof + log Ncirc).
+
+Shrink proof. The proof is symmetric to the “grow proof” step, and we switch the relevant gates back to constantly outputting 1 in the reverse order of the “grow proof” step.
+
+Replace C1 with C2. We can first switch gates in eC1 to always outputting 1. This can be done with a sequence of inner hybrids in the reverse order as in the “grow C2” step. Next, we can grow C1 in the eC1 part, and the proof is the same as the “grow C2” step.
+
+Grow proof for C2 = C2. At this moment, both the eC1 and eC2 parts encode the circuit C2. Next, we want to grow a proof of equivalence for C2 = C2 in the eCproof. Based on Lemma 2.3, such a proof of equivalence exists whose size is O(Ncirc). This step can be accomplished in the same way as the “grow proof for C1 = C2” step.
+
+Select first output. Symmetric to “select second output” step.
+
+Shrink proof. The argument is the same as the previous “shrink proof” step.
+
+Shrink C2. Next, we want to shrink the C2 in the eC2 part. The argument is symmetric to “grow C2” and we switch the gates in eC2 to constantly outputting 1 in the reverse order of the “grow C2” step. In summary, we conclude:
+
+Lemma 3.1. The algorithm Pad satisfies:
+
+• For any circuit C of size at most Ncirc, Pad(C, Ncirc, Nproof) outputs an obfuscated circuit of size eO(Ncirc + Nproof), and moreover, C and Pad(C, Ncirc, Nproof) are functionally equivalent.
+
+• For any circuits C1, C2 with an EF equivalence proof, Pad(C1, Ncirc, Nproof) and Pad(C2, Ncirc, Nproof) are transitively O(log(Ncirc + Nproof))-equivalent.
+
+4 Somewhere Extractable Hash with Prefix Consistency Proof
+
+\section{Somewhere Extractable Hash with Prefix Consistency Proof}
+4 Somewhere Extractable Hash with Prefix Consistency Proof
+
+We define a notion of somewhere extractable hash (SEH) with prefix consistency proof. Suppose two inputs x1, x2 ∈\{0, 1\}n share a common prefix of length j and they hash to y1 and y2 respectively. Then, we can produce an efficient proof π that attests to the fact that the preimages of y1 and y2 share a common length-j prefix. The hash function is somewhere extractable in the following sense. There is a trapdoor setup henceforth denoted TGen which additionallly takes in a set of indices denoted E ⊆\{0, 1, . . . , n −1\}. This trapdoor setup will only be used in the proofs but not in the actual cryptographic construction, and using the resulting hash key will cause the hash values to be statistically binding at the index set E. Further, TGen and the normal setup Gen (which is used in the actual cryptographic construction) output hash keys that are computationally indistinguishable.
+
+Our notion of SEH differs from that of Jain and Jin [JJ22]. In particular, in their construction, the consistency proof can be for an arbitrary subset of indices E′ ⊆[n]. However, we observe that getting indistinguishability obfuscation for circuits with equivalence proofs requires only consistency proofs on a prefix. By constraining the consistency proofs to prefixes, we can greatly simplify the SEH construction and achieve better asymptotical efficiency. Notably, in Jain and Jin’s SEH construction [JJ22], to compute a consistency proof, one would need to compute a batch argument (BARG) to prove that for all i ∈[n] some eO(1)-sized circuit C(i, ·) is satisfiable. The proving time is Tbarg(n, eO(1)) where Tbarg(nidx, ncirc) is the cost of computing a BARG for a circuit of size ncirc and an index set of size nidx. Furthermore, in Jain and Jin’s iO construction, the evaluator needs to compute O(1) BARGs per gate in the padded circuit of size Npadded = eO((Ncirc + Nproof)2). Thus, their evaluation time is at least Npadded · Tbarg(Npadded, eO(1)) which is at least N4 circ (even when aggressively assuming a linear-time BARG). By contrast, in our SEH construction, by exploiting the Merkle-tree-like structure of the underlying SEH hash, producing a prefix consistency proof requires only eOλ(1) time. We will also explain later in Section 5.4 that given the Merkle-tree-like structure of our SEH construction, our iO evaluator only needs to perform eO(Ncirc) work to compute all hashes needed during the iO evaluation.
+
+4.1 Definition
+
+\subsection{Definition}
+4.1 Definition
+
+Henceforth, given x ∈\{0, 1\}n, we use x[: j] to denote the length-j prefix of x. A somewhere extractable hash with prefix consistency proof (SEH with consistency proof) consists of PPT algorithms (Gen, TGen, Hash, Open, Verify, Ext, ConsisP, ConsisV):
+
+• Gen(1λ, 1n, 1|E|): On input a security parameter λ, the length of the message n, and the size of a subset E ⊆\{0, 1, . . . , n −1\}, the “normal mode” key generation algorithm outputs a random hash key hk.
+
+• TGen(1λ, 1n, E): On input a security parameter λ, the length of the message n and an extraction subset E ⊆\{0, 1, . . . , n −1\}, the “trapdoor mode” key generation algorithm outputs a random hash key hk and a trapdoor td.
+
+• Hash(hk, x ∈\{0, 1\}n): On input a hash key hk and a vector x ∈\{0, 1\}n, the algorithm outputs a hash value y.
+
+• Open(hk, x, j): On input a hash key hk, vector x and an index j ∈\{0, 1, . . . , n−1\}, the algorithm outputs an opening proof ρ.
+
+• Verify(hk, y, j, u, ρ): Given a hash key hk and hash value y; an integer index j ∈\{0, 1, . . . , n−1\}, a purported value u ∈\{0, 1\} and an opening proof ρ, the verification algorithm decides to accept (output 1) or reject (output 0) the opening.
+
+• Ext(td, y, i): Given hash value y, trapdoor td, and an index i ∈E, the algorithm outputs an extracted bit at position i.
+
+• ConsisP(hk, x1, x2, j): Given hash key hk, two vectors x1, x2 ∈\{0, 1\}n, and an index j ∈ \{0, 1, . . . , n −1\}, the algorithm outputs a consistency proof π, proving that x1[: j] = x2[: j].
+
+• ConsisV(hk, y1, y2, j, π): Given the hash key hk, two hash values y1, y2, an index j ∈\{0, 1, . . . , n− 1\} and a consistency proof π, the algorithm decides to accept or reject.
+
+Furthermore, we require the scheme to satisfy the following properties.
+
+• Succinctness. The size of hash key, hash value, opening proof, and consistency proof are bounded by poly(λ, |E|, log n).
+
+• Key Indistinguishability. For any stateful PPT adversary A and any polynomial n = n(λ), define the advantage of A in distinguishing Gen and TGen as:
+
+AdvA
+
+SEH(λ)
+
+= Pr[E ←A(1λ, 1n), hk ←Gen(1λ, 1n, 1|E|) : A(hk) = 1]
+
+−Pr[E ←A(1λ, 1n), hk ←TGen(1λ, 1n, E) : A(hk) = 1] .
+
+Then we say SEH is polynomially secure iff for any PPT A, AdvA
+
+SEH(λ) ≤negl(λ), or 2λϵ subexponentially secure iff for any PPT A, AdvA
+
+SEH(λ) ≤2−λϵnegl(λ) for some ϵ > 0.
+
+• Opening Correctness. For any λ, n, E ⊆\{0, . . . , n −1\}, for any hash key hk in the output range of either Gen(1λ, 1n, 1|E|) or TGen(1λ, 1n, E), any vector x ∈\{0, 1\}n, and any index j ∈\{0, 1, . . . , n −1\}, we have
+
+Pr[y ←Hash(hk, x), ρ ←Open(hk, x, j) : Verify(hk, y, j, xj, ρ) = 1] = 1.
+
+• Extraction Correctness. For any λ, n, E ⊆\{0, 1, . . . , n −1\}, for any (hk, td) in the output range of TGen(1λ, 1n, E), any i ∈E, any hash value y, any u ∈\{0, 1\}, and any opening proof ρ, we have Pr[Verify(hk, y, i, u, ρ) = 1 ⇒Ext(td, y, i) = u] = 1.
+
+• Consistency Proof Completeness. For any λ, n, E ⊆\{0, 1, . . . , n−1\}, for any j ∈\{0, . . . , n− 1\}, any x1 ∈\{0, 1\}n, x2 ∈\{0, 1\}n such that x1[: j] = x2[: j], then for any hk in the output range of either Gen(1λ, 1n, 1|E|) or TGen(1λ, 1n, E), we have
+
+Pr[y1 ←Hash(hk, x1), y2 ←Hash(hk, x2), π ←ConsisP(hk, x1, x2, j) :
+
+ConsisV(hk, y1, y2, j, π) = 1] = 1.
+
+• Somewhere Statistical Soundness. For any λ, n, any E ⊆\{0, 1, . . . , n −1\}, for any hash key (hk, td) in the output range of TGen(1λ, 1n, E), for any 0 ≤j < n, for any y1, y2,
+
+∃i ∈E ∩\{0, . . . , j\} : Ext(td, y1, i) ̸= Ext(td, y2, i) =⇒∀π, ConsisV(hk, y1, y2, j, π) = 0
+
+4.2 Construction
+
+\subsection{Construction}
+4.2 Construction
+
+Our construction, inspired by Hubacek and Wichs [HW15], combines a Merkle-tree-like structure and fully homomorphic encryption (FHE). It suffices to consider the case that |E| = 1, i.e. the extraction set is a singleton \{i\}. Based on such a scheme, we can use parallel repetition to support larger sets E [HW15]. Let FHE = (KeyGen, Enc, Dec, Eval) be a polynomially secure (or 2λϵ sub-exponentially secure) FHE scheme. We construct our SEH with consistency proof as follows:
+
+• Gen(1λ, 1n, 1|E|=1): Simply run TGen(1λ, 1n, \{0\}) and output hk, where TGen is defined below.
+
+• TGen(1λ, 1n, \{i\}): Without loss of generality assume n = 2α for some integer α. For j = 0, . . . , α: create pkj, skj ←FHE.KeyGen(1λ). Let bαbα−1 · · · b1 be the binary representation of i. For j = 1, . . . , α, compute cj ←FHE.Encpkj((skj−1, bj)). Let hk = (pk0, . . . , pkα, c1, . . . , cα), and td = skα.
+
+• Hash(hk, x): Let x = (x0, . . . , xn−1). Let T be a binary tree of height α. We think of the leaves as being at level 0 and the root of the tree as being at level α. We inductively and deterministically associate a ciphertext ctv with each vertex v ∈T:
+
+– If v is the j-th (0 ≤j < n) leaf, then let ctv = FHE.Encpk0(xj; 0) (the FHE encryption of xj using fixed randomness 0).
+
+– Let v ∈T be a non-leaf vertex at level j ∈[α] with children v0, v1 having associated ciphertexts ct0, ct1, and let cj be the ciphertext contained in hk for level j. Let ctv = Evalpkj(Fct0,ct1, cj) where Fct0,ct1(·, ·) is the following function:
+
+Fct0,ct1(sk, b) : \{Compute x0 = FHE.Decsk(ct0), x1 = FHE.Decsk(ct1). Output xb.\}
+
+• Open(hk, x, j): Perform the computation of Hash(hk, x) as described above and output the ciphertexts ctv for each vertex v that is a sibling of some vertex along the path from the root to the leaf at position j.
+
+• Verify(hk, y, j, u, ρ): Compute the ciphertext associated with the root, using u as well as ρ which contains the ciphertexts along the path from leaf j to the root. Specifically, for each vertex v along the path from leaf j to the root, inductively compute a ciphertext ctv. In the base case, when v is the j-th leaf, set ctv = FHE.Encpk0(u; 0). Otherwise, if v is not a leaf, one of its children lies on the path from leaf j to the root in which case the corresponding ciphertext was computed in the previous step, and the sibling ciphertext is provided in the opening π. Therefore, we can compute ctv using FHE evaluation just like in the Hash algorithm. Finally, compute the ciphertext ctv associated with the root of the tree and check if y = ctv.
+
+• Ext(td, y, i): Parse td := skα and output the i-th bit of the decrypted message FHE.Decskα(y).
+
+• ConsisP(hk, x1, x2, j): Perform the computation of Hash(hk, x1) and Hash(hk, x2). For b ∈\{1, 2\}, for any vertex v ∈T, let ctv,b be the ciphertext on v in the computation of Hash(hk, xb). In the tree T, the leaves indexed by \{0, 1, . . . , j −1\} can be covered by L = O(log n) subtrees — specifically, if the binary representation of j has the k-th bit set (where the least significant bit is the 0-th bit), then there is a subtree of size 2k.
+
+Let vertices u1, . . . , uL be the roots of these subtrees. Output the proof π consisting of the following terms: for each b ∈\{1, 2\},
+
+– The ciphertexts ctuk,b for all k ∈[L].
+
+– The ciphertexts ctv,b for each vertex v that is a sibling of some vertex along the path from the root to some uk where k ∈[L].
+
+Note that π contains O(log n) ciphertexts.
+
+• ConsisV(hk, y1, y2, j, π): According to j, find the vertices u1, . . . , uL where L = O(log n) in tree T in the same way as ConsisP. Then for b ∈\{1, 2\}, in a similar way as Verify, compute the ciphertext associated with the root using the ciphertexts ct∗,b contained in π where ∗stands for wildcard, and let the result be y′ b. ConsisV will check the following and output the result:
+
+– y1 = y′ 1 and y2 = y′ 2.
+
+– For each k ∈[L], ctuk,1 = ctuk,2.
+
+4.3 Security Proofs
+
+\subsection{Security Proofs}
+4.3 Security Proofs
+
+We will show the above scheme satisfies the following properties:
+
+• Succinctness. By the description of the algorithms, it is not hard to verify the succinctness holds.
+
+• Key Indistinguishability. Since the hash key will not reveal skα, this property follows from the semantic security of the underlying FHE scheme. Formally, W.L.O.G. assume |E| and log n are bounded by some polynomial of λ, since the secret key of SEH only consists of O(|E| log n) FHE ciphertexts, we know that the SEH scheme is polynomially (or 2λϵ sub-exponentially resp.) secure if the underlying FHE scheme satisfies the same level of security.
+
+• Opening Correctness. Since Open outputs an opening proof ρ that is part of an honest execution of the Hash algorithm, the opening correctness holds.
+
+• Extraction Correctness. Suppose hk is generated in the trapdoor mode on index i and the verification passes, i.e., Verify(hk, y, i, u, ρ) = 1. Let \{v0, v1, . . . , vα\} denote the path from the i-th leaf to the root of T. Let ctv0 = FHE.Encpk0(u; 0), ctv1, . . . , ctvα denote the ciphertexts associated with these vertices during the Verify algorithm, and let ct′ v0, . . . , ct′ vα−1 be the corresponding sibling ciphertexts.
+
+– First, we have FHE.Decsk0(ctv0) = u by definition.
+
+– Suppose FHE.Decskj−1(ctvj−1) = u and FHE.Decskj−1(ct′ vj−1) = w — note that the decrypted value w is well-defined even if ct′ vj−1 is not an honestly generated ciphertext. Thus, the circuit Fctvj−1,ct′vj−1(skj−1, bj) chooses the bj-th element of pair (u, w) which is exactly u. Therefore, by the correctness of FHE, we also have FHE.Decskj(ctvj) = u.
+
+Since y = ctvα, we have FHE.Decskα(ctvα) = u which implies extraction correctness.
+
+• Consistency Proof Completeness. Since ConsisP outputs a proof π that is part of an honest execution of the Hash algorithm, the consistency proof completeness holds.
+
+• Somewhere Statistical Soundness. Suppose hk is generated by TGen(1λ, 1n, \{i\}) and
+
+ConsisV(hk, y1, y2, j, π) = 1
+
+for some j > i and π. Let u1, . . . , uL where L = O(log n) be the roots of the subtrees that cover the leaves 0, 1, . . . , j −1 in T. Let uk be the root of subtree that contains leaf i, and suppose it is in the β-th level of T. Using similar induction as the proof of Extraction Correctness, we can show that: FHE.Decskα(yb) = FHE.Decskβ(ctuk,b) for b ∈\{1, 2\}. Since the consistency verification passes, ctuk,1 = ctuk,2 holds, we have FHE.Decskα(y1) = FHE.Decskα(y2). This implies that Ext(td, y1, i) = Ext(td, y2, i).
+
+5 Quasi-Linear Locally Indistinguishable Obfuscator for Circuits
+
+\section{Quasi-Linear Locally Indistinguishable Obfuscator for Circuits}
+5 Quasi-Linear Locally Indistinguishable Obfuscator for Circuits
+
+Through this section, we use n to denote the maximum size of the circuit we want to obfuscate. We next construct a locally indistinguishable obfuscator henceforth denoted LiO for circuits that provides indistinguishability when obfuscating two O(log n)-equivalent circuits. By a hybrid argument, the same obfuscator also provides indistinguishability when obfuscating two transitively O(log n)-equivalent circuits.
+
+5.1 Building Blocks and Parameters
+
+\subsection{Building Blocks and Parameters}
+5.1 Building Blocks and Parameters
+
+We need following building blocks in our construction where s = O(log n) is the maximum size of the subcircuit that differ in appearance:
+
+\subsection{Construction}
+We need following building blocks in our construction where s = O(log n) is the maximum size of the subcircuit that differ in appearance:
+
+• Polynomially secure fully hormomorphic encryption FHE = (KeyGen, Enc, Dec, Eval) with output length LFHE = poly(λ) per bit.
+
+• 2λϵPRG-secure pseudorandom generator PRG : \{0, 1\}λPRG →\{0, 1\}2λPRG with security parameter λPRG = (sLFHE)1/ϵPRG = poly(λ, s).
+
+• 2λϵPRF-secure puncturable pseudorandom functions PRFm : \{0, 1\}λPRF ×\{0, 1\}sLFHE →\{0, 1\} with security parameter λPRF = (sLFHE)1/ϵPRF = poly(λ, s).
+
+• 2λϵPRF-secure puncturable pseudorandom functions PRFσ : \{0, 1\}λPRF×\{0, 1\}sLFHE+1 →\{0, 1\}λPRG.
+
+• Polynomially secure somewhere extractable hash with prefix consistency proof SEH = (Gen, TGen, Hash, Open, Verify, Ext, ConsisP, ConsisV).
+
+• 2λϵobf -secure indistinguishability obfuscator denoted Obf with security parameter λobf = (sLFHE)1/ϵobf = poly(λ, s).
+
+5.2 Construction
+
+Obfuscation algorithm. Our locally indistinguishability obfuscation for circuits denoted LiO(1λ, s, C) below adopts a gate-by-gate obfuscation approach. On input circuit C, it will output an obfuscated circuit g Gate g for each gate g. We formally present our LiO obfuscation algorithm and evaluation algorithm below:
+
+LiO(1λ, s, C)
+
+• Generate a somewhere extractable hash key hk ←SEH.Gen(1λ, 1|C|, 1s).
+
+• For each wire w ∈\{0, 1, . . . , |C| −1\}, generate the following:
+
+– Puncturable PRF key Km w of PRFm for single-bit symmetric key encryption.
+
+– Puncturable PRF key Kσ w of PRFσ for MACs of the ciphertexts and shrunk hash values.
+
+• Generate a FHE key pair (sk, pk) ←FHE.KeyGen(1λ).
+
+• Generate a fake trapdoor td′ ←FHE.Enc(pk, 0|td|).
+
+• For each j ∈[s], generate a fake symmetric encryption key K′ j ←FHE.Enc(pk, 0λPRF).
+
+• For each gate g in C, let inp(g) and out(g) be the set of input and output wires of g, and for each o ∈out(g), let go : \{0, 1\}|inp(g)| →\{0, 1\} be the function that computes the value of the output wire o. For each gate g, we obfuscate a circuit
+
+g Gate g ←Obf(1λ, Gateg hk,\{Km i ,Kσ i \}i∈inp(g),\{Km o ,Kσ o \}o∈out(g),pk,td′,\{K′ j\}j∈[s]),
+
+where the circuit Gateg = Gateg hk,\{Km i ,Kσ i \}i∈inp(g),\{Km o ,Kσ o \}o∈out(g),pk,td′,\{K′ j\}j∈[s] is defined below
+
+(henceforth also called the augmented circuit for gate g).
+
+• Output the obfuscated circuit which is a tuple  \{ g Gate g\}g∈C, \{Km w , Kσ w\}w∈inp(C)∪out(C), hk, pk, td′, \{K′ j\}j∈[s]  .
+
+The augmented circuit Gateg for the gate g is defined below:
+
+Gatehk,\{Km i ,Kσ i \}i∈inp(g),\{Km o ,Kσ o \}o∈out(g),pk,td′,\{K′ j\}j∈[s](H, \{Hi, cti, σi, ρi, πi\}i∈inp(g))
+
+• Homomorphically evaluate the circuit Shrink for H, \{Hi\}i∈inp(g):
+
+h ←FHE.Eval(pk, ShrinkH, (td′, \{K′ j\}j∈[s])),
+
+hi ←FHE.Eval(pk, ShrinkHi, (td′, \{K′ j\}j∈[s])), ∀i ∈inp(g).
+
+Here, the length of h, \{hi\}i∈inp(g) is exactly sLFHE since the circuit Shrink outputs s bits.
+
+• For each input wire i ∈inp(g) of the gate g, we verify the following:
+
+– Local opening ρi for the hash value H is consistent with (cti, hi):
+
+SEH.Verify(hk, H, i, (cti, hi), ρi) ?= 1.
+
+– Proof of consistency for H and Hi with proof πi:
+
+SEH.ConsisV(hk, H, Hi, i, πi) ?= 1.
+
+– MAC σi for (cti, hi): PRG(σi) ?= PRG(PRFσ(Kσ i , (cti, hi))).
+
+• Decrypt the symmetric key ciphertexts cti: let
+
+mi = cti ⊕PRFm(Km i , hi), ∀i ∈inp(g).
+
+• Compute the wire value mo for each output wire o ∈out(g) as mo = go(\{mi\}i∈inp(g)).
+
+• Encrypt mo for each o ∈out(g) under Km o , and MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+cto = mo ⊕PRFm(Km o , h), σo = PRFσ(Kσ o , (cto, h)), ∀o ∈out(g).
+
+• Output \{cto, σo\}o∈out(g).
+
+The ShrinkH(td, \{Kj\}j∈[s]) subroutine is defined below:
+
+ShrinkH(td, \{Kj\}j∈[s])
+
+• Let E be the subset of indices that SEH can extract, it is guaranteed |E| = s. Extract the ciphertexts and hash values by SEH: \{(ct∗ w, h∗ w)\}w∈E ←SEH.Ext(td, H).
+
+• For each w ∈E, suppose w is the j-th (1 ≤j ≤s) element in E, decrypt the message m∗ w ←ct∗ w ⊕PRFm(Kj, h∗ w). If the extraction of SEH fails, simply let m∗ w = 0.
+
+• Output \{m∗ w\}w∈E.
+
+Evaluation algorithm. We now describe how to evaluate the obfuscated circuit. Given an obfuscated circuit  \{ g Gate g\}g∈C, \{Km w , Kσ w\}w∈inp(C)∪out(C), hk, pk, td′, \{K′ j\}j∈[s] 
+
+and an input x ∈\{0, 1\}|inp(C)|, we now compute C(x) as follows (assuming the topology of C is public):
+
+Evaluation of obfuscated circuit
+
+Suppose that the n := |C| wires are indexed according to topological order. For each wire w ∈\{0, 1, . . . , n −1\}:
+
+• Define the string of all existing ciphertexts and shrink hash values as follows: let sw = (sw,0, sw,1, . . . , sw,n−1), where for each wire w′ ∈\{0, 1, . . . , n −1\},
+
+sw,w′ =  (ctw′, hw′) for w′ < w (0, 0|hw′|) for w′ ≥w .
+
+Here |hw′| = sLFHE is the length of the shrunk hash value.
+
+• Prepare the hash value Hw = SEH.Hash(hk, sw).
+
+• Shrink the hash value: let
+
+hw ←FHE.Eval(pk, ShrinkHw, (td′, \{K′ j\}j∈[s])),
+
+where Shrink is the circuit defined above.
+
+• If w is an input wire of C, compute
+
+ctw = xw ⊕PRFm(Km w , hw), σw = PRFσ(Kσ w, (ctw, hw)),
+
+where xw denotes the value of wire w in input x.
+
+• Otherwise, suppose w is the output wire of gate g.
+
+– Prepare the local openings for the input wires inp(g) of hash value Hw: for each i ∈ inp(g), let ρi ←SEH.Open(hk, sw, i).
+
+– Prepare the prefix consistency proofs for Hw and each of \{Hi\}i∈inp(g): for each i ∈inp(g), let πi ←SEH.ConsisP(hk, sw, si, i).
+
+– Compute the gate g. Let
+
+(ctw, σw) ←^ Gateg(Hw, \{Hi, cti, σi, ρi, πi\}i∈inp(g)).
+
+Finally, use the keys \{Km o \}o∈out(C) to decrypt the output wires \{cto\}o∈out(C) and output the wire values \{cto ⊕PRFm(Km o , ho)\}o∈out(C).
+
+The correctness of our construction can be checked mechanically, so we omit the proof here. We defer the security proofs to Section 5.3.
+
+\subsection{Security Proofs}
+The correctness of our construction can be checked mechanically, so we omit the proof here. We defer the security proofs to Section 5.3.
+
+5.3 Security Proofs
+
+We will prove the following lemma:
+
+Lemma 5.1 (Security of LiO). Suppose s = O(log n). The algorithm LiO(1λ, s, ·) is an s-equivalent obfuscator: for any two size-n circuits C, eC that are s-equivalent via the subcircuit S with |S| = s, and for any PPT adversary A, we have Pr[A(LiO(1λ, s, C)) = 1] −Pr[A(LiO(1λ, s, eC)) = 1] = negl(λ).
+
+By the definition of transitively s-equivalent circuits, we immediately obtain the following corollary from a standard hybrid argument:
+
+Corollary 5.2. Suppose s = O(log n). The algorithm LiO(1λ, s, ·) is also an transitively sequivalent obfuscator: for any two transitively s-equivalent circuits C, eC and any PPT adversary A, we have Pr[A(LiO(1λ, s, C)) = 1] −Pr[A(LiO(1λ, s, eC)) = 1] = negl(λ).
+
+Proof of Lemma 5.1. We prove the lemma via a series of hybrids. Let C, eC be two s-equivalent circuits. This means that the two circuits are identical except for a subcircuit S of size at most s; and moreover the subcircuit S in both circuits has the same functionality.
+
+Hybrid Real. This hybrid is the same as LiO(1λ, s, C).
+
+Hybrid Trap. This hybrid is almost the same as Real, except that we replace the SEH key hk to the trapdoor mode that is extractable for the indices E = inp(S) with trapdoor td. Then we replace the FHE ciphertexts td′ and \{K′ j\}j∈[s] as
+
+td′ ←FHE.Enc(pk, td),
+
+K′ j ←FHE.Enc(pk, Km inpj(S)), j ∈[s],
+
+where inpj(S) denotes the j-th input wire of S. By the key indistinguishability of SEH and the semantic security of FHE, Real and Trap are computationally indistinguishable.
+
+Hybrid Hyb. This hybrid is almost the same as Trap, except that for each gate g ∈S, instead of obfuscating the original Gateg, we obfuscate the following circuit:
+
+Modified Gateg circuit
+
+• Homomorphically evaluate the circuit Shrink for H, \{Hi\}i∈inp(g):
+
+h ←FHE.Eval(pk, ShrinkH, (td′, \{K′ j\}j∈[s])),
+
+hi ←FHE.Eval(pk, ShrinkHi, (td′, \{K′ j\}j∈[s])), ∀i ∈inp(g).
+
+• For each input wire i ∈inp(g) of the gate g, we verify the following:
+
+– Local opening ρi for the hash value H is consistent with (cti, hi):
+
+SEH.Verify(hk, H, i, (cti, hi), ρi) ?= 1.
+
+– Proof of consistency for H and Hi with proof πi:
+
+SEH.ConsisV(hk, H, Hi, i, πi) ?= 1.
+
+– MAC σi for (cti, hi): PRG(σi) ?= PRG(PRFσ(Kσ i , (cti, hi))).
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• Compute the output wire values \{mo\}o∈out(g):
+
+mo = Co S(\{m∗ w\}w∈inp(S)),
+
+where Co S is the function that directly calculates mo from the inputs of S.
+
+• Encrypt mo for each o ∈out(g) under Km o , and MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+cto = mo ⊕PRFm(Km o , h), σo = PRFσ(Kσ o , (cto, h)), ∀o ∈out(g).
+
+• Output \{cto, σo\}o∈out(g).
+
+Remark 5.3. Recall that in the Shrink circuit, if the extraction for some m∗ j fails, we simply set it to 0. So we assume \{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h)
+
+will always outputs a valid m∗ w ∈\{0, 1\} for each w ∈inp(S).
+
+To show the indistinguishability of Trap and Hyb, we will use a series of intermediate hybrids. Notice that Trap and Hyb only differ by the gates inside S, henceforth we may label all gates in S from 0 to s −1 in topological order.
+
+Hybrid Hybg. This hybrid is indexed by a gate g: for each g′ ≤g, g′ is obfuscated in the same way as Hyb; otherwise, g′ is obfuscated in the same way as Trap. We can see that Hyb−1 ≡Trap and Hybs−1 ≡Hyb. where ≡means identically distributed. Next we will use a sequence of intermediate hybrids to show that for each g, Pr[A(Hybg−1) = 1] −Pr[A(Hybg) = 1] = negl(λ),
+
+and therefore |Pr[A(Trap) = 1] −Pr[A(Hyb) = 1]| = negl(λ).
+
+Below, without loss of generality, we assume the gate g has two input wires denoted inp(g) = \{l, r\}. The proof for any constant number of input wires is similar by iterating over all input wires. We have the following sequence of hybrids:
+
+Hybrid Hybη g. This hybrid is almost the same as Hybg−1, except that for gate g, we additionally add a checking for the decrypted values ml of the ciphertext (ctl, hl), depending on whether hl ≤η or not. There are 2sLFHE possibility of hls, thus η is bounded by 2sLFHE.
+
+Modified Gateg circuit
+
+• Homomorphically evaluate the circuit Shrink for H, \{Hi\}i∈inp(g):
+
+h ←FHE.Eval(pk, ShrinkH, (td′, \{K′ j\}j∈[s])),
+
+hi ←FHE.Eval(pk, ShrinkHi, (td′, \{K′ j\}j∈[s])), ∀i ∈inp(g).
+
+• For each input wire i ∈inp(g) of the gate g, we verify the following:
+
+– Local opening ρi for the hash value H is consistent with (cti, hi):
+
+SEH.Verify(hk, H, i, (cti, hi), ρi) ?= 1.
+
+– Proof of consistency for H and Hi with proof πi:
+
+SEH.ConsisV(hk, H, Hi, i, πi) ?= 1.
+
+– MAC σi for (cti, hi): PRG(σi) ?= PRG(PRFσ(Kσ i , (cti, hi))).
+
+• Decrypt the symmetric key ciphertexts cti: let
+
+mi = cti ⊕PRFm(Km i , hi), ∀i ∈inp(g).
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• If hl ≤η and l is not an input wire of S, then check
+
+ml ?= Cl S(\{m∗ w\}w∈inp(S)).
+
+Recall that Cl S is the function that directly calculates the value of wire l from the inputs of subcircuit S.
+
+• Compute the wire value mo for each output wire o ∈out(g) as mo = go(\{mi\}i∈inp(g)).
+
+• Encrypt mo for each o ∈out(g) under Km o , and MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+cto = mo ⊕PRFm(Km o , h), σo = PRFσ(Kσ o , (cto, h)), ∀o ∈out(g).
+
+• Output \{cto, σo\}o∈out(g).
+
+We have Hyb−1 g ≈c Hybg−1 from the security of the underlying indistinguishability obfuscation. Next, we will use a sequence of hybrids to argue that, Pr[A(Hybη g) = 1] −Pr[A(Hybη+1 g ) = 1] = 2−sLFHEnegl(λ).
+
+Since the case is trivial when l is an input wire of S, we assume l is not an input wire of S without loss of generality.
+
+Hybrid Hybη,0 g . This hybrid is same as Hybη−1 g .
+
+Hybrid Hybη,1 g . This hybrid is almost the same as Hybη,0 g , except that we make the following changes: Slightly abusing notation, let l also denote the gate that has output wire l. Since l < g according to topological order, it has been already changed into the form in Hyb. So if in the execution of gate l, h = η, then the ciphertext of output wire l is fixed. Let it be CTl:
+
+\[
+CT_l = C^l_S(\{m^*_w\}_{w \in \mathrm{inp}(S)}) \oplus \mathrm{PRF}_m(K^m_l, \eta), \quad \{m^*_w\}_{w \in \mathrm{inp}(S)} \leftarrow \mathrm{FHE.Dec}(sk, \eta).
+\]
+
+Let CTl = CTl ⊕1. We replace the obfuscation corresponding to gate l with an obfuscation of the following circuit:
+
+Modified Gatel circuit • · · ·
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• Compute the output wire values \{mo\}o∈out(l):
+
+\[
+m_o = C^o_S(\{m^*_w\}_{w \in \mathrm{inp}(S)}), \quad \forall o \in \mathrm{out}(l).
+\]
+
+• For each o ∈out(l), encrypt mo under Km o :
+
+cto = mo ⊕PRFm(Km o , h).
+
+• For each o ∈out(l), MAC (cto, h) under Kσ o to obtain σo:
+
+– If o ̸= l, then calculate σo = PRFσ(Kσ o , (cto, h)).
+
+– Otherwise, o = l, calculate
+
+\[
+\sigma_l = \mathrm{PRF}_\sigma(K^\sigma_l\{(CT_l, \eta)\}, (ct_l, h)).
+\]
+
+Here $K^\sigma_l\{(CT_l, \eta)\}$ denotes the punctured key, hard-coded in the circuit.
+
+• Output \{cto, σo\}o∈out(l).
+
+Moreover, we modify the Gateg circuit as follows:
+
+Modified Gateg circuit
+
+• Homomorphically evaluate the circuit Shrink for H, \{Hi\}i∈inp(g):
+
+h ←FHE.Eval(pk, ShrinkH, (td′, \{K′ j\}j∈[s])),
+
+hi ←FHE.Eval(pk, ShrinkHi, (td′, \{K′ j\}j∈[s])), ∀i ∈inp(g).
+
+• For each input wire i ∈inp(g) of the gate g, we verify the following:
+
+– Local opening ρi for the hash value H is consistent with (cti, hi):
+
+SEH.Verify(hk, H, i, (cti, hi), ρi) ?= 1.
+
+– Proof of consistency for H and Hi with proof πi:
+
+SEH.ConsisV(hk, H, Hi, i, πi) ?= 1.
+
+– MAC σi for (cti, hi): If i ̸= l, then check
+
+PRG(σi) ?= PRG(PRFσ(Kσ i , (cti, hi))).
+
+Otherwise, if i = l:
+
+∗If hl = η and ctl = CTl, then verify
+
+PRG(σl) ?= PRG(PRFσ(Kσ l , (CTl, η)) | \{z \} hard-wired
+
+).
+
+∗Otherwise, verify
+
+PRG(σl) ?= PRG(PRFσ(Kσ l \{(CTl, η)\} | \{z \} hard-wired
+
+, (ctl, hl))).
+
+In the above, Kσ l \{(CTl, η)\} and PRFσ(Kσ l , (CTl, η)) are hard-wired in the circuit.
+
+• Decrypt the symmetric key ciphertexts cti: let
+
+mi = cti ⊕PRFm(Km i , hi), ∀i ∈inp(g).
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• If hl < η, then check ml ?= Cl S(\{m∗ w\}w∈inp(S)).
+
+• Compute the wire value mo for each output wire o ∈out(g) as mo = go(\{mi\}i∈inp(g)).
+
+• Encrypt mo for each o ∈out(g) under Km o , and MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+cto = mo ⊕PRFm(Km o , h), σo = PRFσ(Kσ o , (cto, h)), ∀o ∈out(g).
+
+• Output \{cto, σo\}o∈out(g).
+
+We now argue the indistinguishability of Hybη,0 g and Hybη,1 g . First by the definition of CTl, (CTl, η) will never occur in the MAC step of l, so our modification to gate l does not change its functionality. By the security of the underlying indistinguishability
+
+obfuscation, the obfuscation of l is indistinguishable in these two hybrids. Our modification of the gate g also does not change its functionality, so by the security of the underlying indistinguishability obfuscation, we have Pr[A(Hybη,0 g ) = 1] −Pr[A(Hybη,1 g ) = 1]
+
+=2−λobf ϵobf negl(λ)
+
+≤2−sLFHEnegl(λ).
+
+Hybrid Hybη,2 g . This hybrid is almost the same as Hybη,1 g , except that we replace Gateg with the following:
+
+Modified Gateg circuit • · · ·
+
+• If i ̸= l, then check PRG(σi) ?= PRG(PRFσ(Kσ i , (cti, hi))).
+
+Otherwise, if i = l:
+
+– If hl = η and ctl = CTl, verify PRG(σl) ?= r,
+
+where r is a random string of length 2λPRG as output of PRG, hard-coded in the circuit.
+
+– Otherwise, verify
+
+PRG(σl) ?= PRG(PRFσ(Kσ l \{(CTl, η)\}, (ctl, hl))).
+
+• · · ·
+
+Since the master key Kσ l does not appear anywhere else, by the security of puncturable PRF and PRG, we have
+
+Pr[A(Hybη,1 g ) = 1] −Pr[A(Hybη,2 g ) = 1]
+
+=(2−λPRGϵPRG + 2−λPRFϵPRF)negl(λ)
+
+≤2−sLFHEnegl(λ).
+
+Hybrid Hybη,3 g . This hybrid is almost the same as Hybη,2 g , except that we replace Gateg with the following:
+
+Modified Gateg circuit • · · ·
+
+• If i ̸= l, then check PRG(σi) ?= PRG(PRFσ(Kσ i , (cti, hi))).
+
+Otherwise, if i = l:
+
+– If hl = η and ctl = CTl, abort.
+
+– Otherwise, verify
+
+PRG(σl) ?= PRG(PRFσ(Kσ l \{(CTl, η)\}, (ctl, hl))).
+
+• · · ·
+
+For gate l, we undo its changes in Hybη,1 g (which does not affect its functionality). If we set λPRG to be large enough, then with overwhelming probability (at least 1 −2−λPRG) a random r does not lie in the domain of the PRG, so the functionality of gate g does not change. By the security of the underlying indistinguishability obfuscation, we have Pr[A(Hybη,2 g ) = 1] −Pr[A(Hybη,3 g ) = 1]
+
+≤2−λPRG + 2−λobf ϵobf negl(λ)
+
+≤2−sLFHEnegl(λ).
+
+Hybrid Hybη,4 g . This hybrid is almost the same as Hybη,3 g , except that we replace Gateg with the following:
+
+Modified Gateg circuit
+
+• Homomorphically evaluate the circuit Shrink for H, \{Hi\}i∈inp(g):
+
+h ←FHE.Eval(pk, ShrinkH, (td′, \{K′ j\}j∈[s])),
+
+hi ←FHE.Eval(pk, ShrinkHi, (td′, \{K′ j\}j∈[s])), ∀i ∈inp(g).
+
+• For each input wire i ∈inp(g) of the gate g, we verify the following:
+
+– Local opening ρi for the hash value H is consistent with (cti, hi):
+
+SEH.Verify(hk, H, i, (cti, hi), ρi) ?= 1.
+
+– Proof of consistency for H and Hi with proof πi:
+
+SEH.ConsisV(hk, H, Hi, i, πi) ?= 1.
+
+– MAC σi for (cti, hi): PRG(σi) ?= PRG(PRFσ(Kσ i , (cti, hi))).
+
+• Decrypt the symmetric key ciphertexts cti: let
+
+mi = cti ⊕PRFm(Km i , hi), ∀i ∈inp(g).
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• (Recall that we assume l is not an input wire of S.) If hl < η, then check
+
+ml ?= Cl S(\{m∗ w\}w∈inp(S)).
+
+• If hl = η, then check ml ?= CTl ⊕PRFm(Km l , η).
+
+• Compute the wire value mo for each output wire o ∈out(g) as mo = go(\{mi\}i∈inp(g)).
+
+• Encrypt mo for each o ∈out(g) under Km o , and MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+cto = mo ⊕PRFm(Km o , h), σo = PRFσ(Kσ o , (cto, h)), ∀o ∈out(g).
+
+• Output \{cto, σo\}o∈out(g).
+
+The difference is: when hl = η, in Hybη,3 g , we check ctl ?= CTl; but in Hybη,4 g , we set ml =
+
+ctl ⊕PRFm(Km l , η) and check ml ?= CTl ⊕PRFm(Km l , η). Since the functionality of g does not change, we have Pr[A(Hybη,3 g ) = 1] −Pr[A(Hybη,4 g ) = 1] = 2−sLFHEnegl(λ)
+
+by the security of the underlying indistinguishability obfuscation.
+
+Hybrid Hybη,5 g . This hybrid is the same as Hybη g. The difference of Gateg in Hybη,4 g and Hybη,5 g is:
+
+• In Hybη,4 g , when hl = η, we check whether ml = CTl⊕PRFm(Km l , η). Note that by the definition of CTl:
+
+CTl = Cl S(\{m∗ w\}w∈inp(S)) ⊕PRFm(Km l , η), \{m∗ w\}w∈inp(S) ←FHE.Dec(sk, η),
+
+it is equivalent to check whether ml = Cl S(\{m∗ w\}w∈inp(S)), \{m∗ w\}w∈inp(S) ←FHE.Dec(sk, η).
+
+• In Hybη,5 g , when hl = η, we check whether ml = Cl S(\{m∗ w\}w∈inp(S)), \{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+Note that the only difference is FHE.Dec(sk, η) and FHE.Dec(sk, h). Recall that in gate g we do a consistency verification:
+
+SEH.ConsisV(hk, H, Hl, l, πl) ?= 1,
+
+and h, hl are extracted from H, Hl, so when hl = η, by the somewhere statistical soundness of SEH, FHE.Dec(sk, η) and FHE.Dec(sk, h) must agree on the set inp(S) ∩[: l]. Let dep(l) denote the wires that l depends on. The topological order of these wires must be smaller than l, so dep(l) ⊆[: l], and thus FHE.Dec(sk, η) and FHE.Dec(sk, h) must agree on inp(S) ∩dep(l). Note that when we calculate Cl S(\{m∗ w\}w∈inp(S)), its value fully depends on \{m∗ w\}w∈inp(S)∩dep(l). Hence the functionality of gate g does not change in Hybη,5 g and Hybη,4 g , and from the security of the underlying indistinguishability obfuscation, we get Pr[A(Hybη,4 g ) = 1] −Pr[A(Hybη,5 g ) = 1] = 2−sLFHEnegl(λ).
+
+From previous intermediate hybrids, we prove Pr[A(Hybη g) = 1] −Pr[A(Hybη+1 g ) = 1] = 2−sLFHEnegl(λ),
+
+therefore, Pr[A(Hybg−1) = 1] −Pr[A(Hyb2sLFHE g ) = 1] = negl(λ),
+
+Hybrid HybCheckLg. This hybrid is almost the same as Hyb2sLFHE g , except that we replace gate Gg with:
+
+Modified Gateg circuit
+
+• Homomorphically evaluate the circuit Shrink for H, \{Hi\}i∈inp(g):
+
+h ←FHE.Eval(pk, ShrinkH, (td′, \{K′ j\}j∈[s])),
+
+hi ←FHE.Eval(pk, ShrinkHi, (td′, \{K′ j\}j∈[s])), ∀i ∈inp(g).
+
+• For each input wire i ∈inp(g) of the gate g, we verify the following:
+
+– Local opening ρi for the hash value H is consistent with (cti, hi):
+
+SEH.Verify(hk, H, i, (cti, hi), ρi) ?= 1.
+
+– Proof of consistency for H and Hi with proof πi:
+
+SEH.ConsisV(hk, H, Hi, i, πi) ?= 1.
+
+– MAC σi for (cti, hi): PRG(σi) ?= PRG(PRFσ(Kσ i , (cti, hi))).
+
+• Decrypt the symmetric key ciphertexts cti: let
+
+mi = cti ⊕PRFm(Km i , hi), ∀i ∈inp(g).
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• If l is not an input wire of S, check ml ?= Cl S(\{m∗ w\}w∈inp(S)).
+
+• Compute the wire value mo for each output wire o ∈out(g) as mo = go(\{mi\}i∈inp(g)).
+
+• Encrypt mo for each o ∈out(g) under Km o , and MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+cto = mo ⊕PRFm(Km o , h), σo = PRFσ(Kσ o , (cto, h)), ∀o ∈out(g).
+
+• Output \{cto, σo\}o∈out(g).
+
+The functionality of gate g does not change, hence by the security of the underlying indistinguishability obfuscation, we have Pr[A(Hyb2sLFHE g ) = 1] −Pr[A(HybCheckLg) = 1] = negl(λ).
+
+Hybrid HybCheckLRg. This hybrid is almost the same as HybCheckLg, except that we replace Gateg with:
+
+Modified Gateg circuit • · · ·
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• If l is not an input wire of S, check ml ?= Cl S(\{m∗ w\}w∈inp(S)).
+
+• If r is not an input wire of S, check mr ?= Cr S(\{m∗ w\}w∈inp(S)).
+
+• Compute the wire value mo for each output wire o ∈out(g) as mo = go(\{mi\}i∈inp(g)).
+
+• · · ·
+
+Similarly, we can prove Pr[A(HybCheckLg) = 1] −Pr[A(HybCheckLRg) = 1] = negl(λ).
+
+Hybrid HybCheckg. This hybrid is almost the same as HybCheckLRg, except that we replace Gateg with:
+
+Modified Gateg circuit • · · ·
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• If l is not an input wire of S, check ml ?= Cl S(\{m∗ w\}w∈inp(S)).
+
+• If r is not an input wire of S, check mr ?= Cr S(\{m∗ w\}w∈inp(S)).
+
+• If l is an input wire of S, check ml ?= m∗ l .
+
+• If r is an input wire of S, check mr ?= m∗ r.
+
+• Compute the wire value mo for each output wire o ∈out(g) as mo = go(\{mi\}i∈inp(g)).
+
+• · · ·
+
+Since we also do a local opening verification in gate g, by the extraction correctness of SEH, the functionality of g does not change, so Pr[A(HybCheckLRg) = 1] −Pr[A(HybCheckg) = 1] = negl(λ)
+
+by the security of the underlying indistinguishability obfuscation.
+
+Hybrid HybCheckDirectg. This hybrid is almost the same as HybCheckg, except that we directly calculate the outputs of g by the decryption values of FHE:
+
+Modified Gateg circuit • · · ·
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• If l is not an input wire of S, check ml ?= Cl S(\{m∗ w\}w∈inp(S)).
+
+• If r is not an input wire of S, check mr ?= Cr S(\{m∗ w\}w∈inp(S)).
+
+• If l is an input wire of S, check ml ?= m∗ l .
+
+• If r is an input wire of S, check mr ?= m∗ r.
+
+• Compute the output wire values \{mo\}o∈out(g):
+
+mo = Co S(\{m∗ w\}w∈inp(S)).
+
+• · · ·
+
+Since we have the checkings for ml and mr, the functionality of g does not change. By the security of the underlying indistinguishability obfuscation, we have Pr[A(HybCheckg) = 1] −Pr[A(HybCheckDirectg) = 1] = negl(λ).
+
+Finally, note that the difference of HybCheckDirectg and Hybg is that HybCheckDirectg additionally contains the checkings. We can undo these checkings and use similar hybrid argument to show that Pr[A(HybCheckDirectg) = 1] −Pr[A(Hybg) = 1] = negl(λ).
+
+In conclusion, we have Pr[A(Hybg−1) = 1] −Pr[A(Hybg) = 1] = negl(λ).
+
+Indeed Trap and Hyb are indistinguishable.
+
+Hybrid g Hyb. In this hybrid, for each gate in subcircuit S, instead of computing each output wires by C, we compute it by the circuit eC. Namely, for each gate g ∈S, we obfuscate the following circuit:
+
+Modified Gateg circuit • · · ·
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• Compute the output wire values \{mo\}o∈out(g):
+
+mo = eCo S(\{m∗ w\}w∈inp(S)).
+
+• · · ·
+
+To show that Hyb and g Hyb are indistinguishable, we use a series of intermediate hybrids.
+
+Hybrid g Hybg. For each gate g′ where g′ ≤g, it computes its output using eC. But for each gate g′ with g′ > g, it still uses C to compute its output wires.
+
+We will use a series of hybrids to show that for each g ∈S, g Hybg−1 and g Hybg are indistinguishable. For the simplicity of notation, we assume g only has one output wire o (it is not hard to generalize the proof for multiple output wires — see Remark 5.4). If o is an output wire of S, since the functionality of the subcircuit S is preserved, the case is trivial. So without loss of generality we assume o /∈out(S).
+
+Hybrid g Hyb η g. This hybrid is almost the same as g Hybg−1, except that for gate g, we compute the wire value mo and its ciphertext cto as the following (again η is bounded by 2sLFHE):
+
+Modified Gateg circuit
+
+• Homomorphically evaluate the circuit Shrink for H, \{Hi\}i∈inp(g):
+
+h ←FHE.Eval(pk, ShrinkH, (td′, \{K′ j\}j∈[s])),
+
+hi ←FHE.Eval(pk, ShrinkHi, (td′, \{K′ j\}j∈[s])), ∀i ∈inp(g).
+
+• For each input wire i ∈inp(g) of the gate g, we verify the following:
+
+– Local opening ρi for the hash value H is consistent with (cti, hi):
+
+SEH.Verify(hk, H, i, (cti, hi), ρi) ?= 1.
+
+– Proof of consistency for H and Hi with proof πi:
+
+SEH.ConsisV(hk, H, Hi, i, πi) ?= 1.
+
+– MAC σi for (cti, hi): PRG(σi) ?= PRG(PRFσ(Kσ i , (cti, hi))).
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• Compute the output wire value mo:
+
+– If h ≤η, compute mo = eCo S(\{m∗ w\}w∈inp(S)).
+
+– If h > η, compute mo = Co S(\{m∗ w\}w∈inp(S)).
+
+• Encrypt mo under Km o , and MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+cto = mo ⊕PRFm(Km o , h), σo = PRFσ(Kσ o , (cto, h)).
+
+• Output (cto, σo).
+
+We will use a series of hybrids to argue that Pr[A(g Hyb η−1 g ) = 1] −Pr[A(g Hyb η g) = 1] = 2−sLFHEnegl(λ).
+
+Hybrid g Hyb η,0 g . This hybrid is the same as g Hyb η−1 g .
+
+Hybrid g Hyb η,1 g . This hybrid is almost the same as g Hyb η,0 g , except that we replace Gateg with the following:
+
+Modified Gateg circuit • · · ·
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• Compute the output wire value mo and corresponding ciphertext cto:
+
+– If h < η, compute mo = eCo S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o \{η\}, h).
+
+– If h = η, compute mo = Co S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o , η).
+
+– If h > η, compute mo = Co S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o \{η\}, h).
+
+Here Km o \{η\} and PRFm(Km o , η) are hard-coded in the circuit.
+
+• MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+σo = PRFσ(Kσ o , (cto, h)).
+
+• Output (cto, σo).
+
+Since the functionality of g does not change, Pr[A(g Hyb η,0 g ) = 1] −Pr[A(g Hyb η,1 g ) = 1] = 2−sLFHEnegl(λ)
+
+from the security of the underlying indistinguishability obfuscation.
+
+Hybrid g Hyb η,2 g . This hybrid is almost the same as g Hyb η,1 g , except that we replace Gateg with the following where r a random bit:
+
+Modified Gateg circuit • · · ·
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• Compute the output wire value mo and corresponding ciphertext cto:
+
+– If h < η, compute mo = eCo S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o \{η\}, h).
+
+– If h = η, compute mo = Co S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕r.
+
+– If h > η, compute mo = Co S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o \{η\}, h).
+
+Here Km o \{η\} and random value r are hard-coded in the circuit.
+
+• MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+σo = PRFσ(Kσ o , (cto, h)).
+
+• Output (cto, σo).
+
+Since o is not an output wire of S, let go be the gate that has input wire o, then go ∈S. In this hybrid, go will compute its outputs directly from CS, and it will not use Km o to decrypt the input ciphertext cto (see Hyb). So the unpunctured version of Km o does not occur anywhere else. By the security of puncturable PRF, we have Pr[A(g Hyb η,1 g ) = 1] −Pr[A(g Hyb η,2 g ) = 1] = 2−sLFHEnegl(λ).
+
+Hybrid g Hyb η,3 g . This hybrid is almost the same as g Hyb η,2 g , except that we replace Gateg with the following:
+
+Modified Gateg circuit • · · ·
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• Compute the output wire value mo and corresponding ciphertext cto:
+
+– If h < η, compute mo = eCo S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o \{η\}, h).
+
+– If h = η, compute mo = eCo S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕r.
+
+– If h > η, compute mo = Co S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o \{η\}, h).
+
+Here Km o \{η\} and random value r are hard-coded in the circuit.
+
+• MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+σo = PRFσ(Kσ o , (cto, h)).
+
+• Output (cto, σo).
+
+Since r is uniformly random, the distribution of cto does not change, so we have Pr[A(g Hyb η,2 g ) = 1] −Pr[A(g Hyb η,3 g ) = 1] = 2−sLFHEnegl(λ)
+
+by the security of the underlying indistinguishability obfuscation.
+
+Hybrid g Hyb η,4 g . This hybrid is almost the same as g Hyb η,3 g , except that we replace Gateg with the following:
+
+Modified Gateg circuit • · · ·
+
+• Extract the inputs to the subcircuit S via the decryption of FHE:
+
+\{m∗ w\}w∈inp(S) ←FHE.Dec(sk, h).
+
+• Compute the output wire value mo and corresponding ciphertext cto:
+
+– If h < η, compute mo = eCo S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o \{η\}, h).
+
+– If h = η, compute mo = eCo S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o , η).
+
+– If h > η, compute mo = Co S(\{m∗ w\}w∈inp(S)), and cto = mo ⊕PRFm(Km o \{η\}, h).
+
+Here Km o \{η\} and PRFm(Km o , η) are hard-coded in the circuit.
+
+• MAC (cto, h) under Kσ o to obtain σo, i.e.
+
+σo = PRFσ(Kσ o , (cto, h)).
+
+• Output (cto, σo).
+
+By the security of puncturable PRF, we have Pr[A(g Hyb η,3 g ) = 1] −Pr[A(g Hyb η,4 g ) = 1] = 2−sLFHEnegl(λ).
+
+Hybrid g Hyb η,5 g . This hybrid is the same as g Hyb η g. Since the functionality of g does not change in g Hyb η,5 g and g Hyb η,4 g , we have Pr[A(g Hyb η,4 g ) = 1] −Pr[A(g Hyb η,5 g ) = 1] = 2−sLFHEnegl(λ)
+
+by the security of the underlying indistinguishability obfuscation.
+
+From above hybrid argument, we have Pr[A(g Hyb η−1 g ) = 1] −Pr[A(g Hyb η g) = 1] = 2−sLFHEnegl(λ).
+
+Further, Pr[A(g Hybg−1) = 1] −Pr[A(g Hybg) = 1] = negl(λ),
+
+hence Hyb and g Hyb are indistinguishable.
+
+Remark 5.4. If the gate g has multiple outputs, we can extend the proof by going over the above hybrid sequence and change each output wire one by one.
+
+Hybrid g Real. This hybrid is the same as LiO(1λ, s, eC). By a reverse hybrid argument, we can show that g Hyb and g Real are indistinguishable.
+
+In conclusion, Real and g Real are indistinguishable, i.e., Pr[A(LiO(1λ, s, C)) = 1] −Pr[A(LiO(1λ, s, eC)) = 1] = negl(λ).
+
+5.4 Efficiency
+
+\subsection{Efficiency}
+5.4 Efficiency
+
+Below we assume that the size of the circuit to be obfuscated is bounded by n and the size of the differing (but functionally equivalent) subcircuit is bounded by s = O(log n).
+
+Size of obfuscated circuit. Since s = O(log n), and due to the succinctness of the underlying SEH, we know that the size of the augmented circuit for each gate g is upper bounded by eOλ(1). Therefore, applying a polynomial-overhead indistinguishability obfuscation to this augmented circuit results in an obfuscated program of size eOλ(1). Recall that we go through a gate-by-gate obfuscation for the entire circuit, and the obfuscated program size is dominated by the total size of the obfuscated programs corresponding to all gates. Thus, the size of the obfuscated circuit is upper bounded by eOλ(n).
+
+Time for evaluating the obfuscated circuit. The time for evaluating each obfuscated gate is eOλ(1). However, evaluating the obfuscated circuit also requires evaluating the SEH hashes for all wires, and computing the opening and consistency proofs for all gates. If done na¨ıvely, evaluating all n wires’ hash values will take at least quadratic in n time since each hash involves a length-n input. Thus, to make the evaluation quasi-linear time, we need to show that it takes only eOλ(n) time to evaluate all n hashes and all the opening and consistency proofs. Fortunately, all n hash values can indeed be computed incrementally in eOλ(n) time due to the tree structure, each time modifying only O(log n) hash computations. With some additional tricks (described in the proof of Claim 5.5), we can compute all the opening and consistency proofs in eOλ(n) time too. Thus we have the following claim:
+
+Claim 5.5. The evaluation algorithm can be carefully implemented such that for a size-n circuit C, it runs in eOλ(n) time.
+
+Proof. The performance bottleneck of the evaluation algorithm is the following SEH operations:
+
+• For each w ∈\{0, 1, . . . , n −1\}, the evaluation algorithm should prepare the hash value Hw. Recall that sw = (sw,0, sw,1, . . . , sw,n−1) where
+
+sw,w′ =  (ctw′, hw′) for w′ < w (0, 0|hw′|) for w′ ≥w
+
+and Hw ←SEH.Hash(hk, sw).
+
+• For each w ∈\{0, 1, . . . , n −1\}, suppose it is the output wire of g, then the evaluation algorithm needs to prepare local openings \{SEH.Open(hk, sw, i)\}i∈inp(g). There are totally O(n) such operations.
+
+• For each w ∈\{0, 1, . . . , n−1\}, suppose it is the output wire of g, then the evaluation algorithms needs to prepare consistency proofs \{SEH.ConsisP(hk, sw, si, i)\}i∈inp(g). There are totally O(n) such operations.
+
+We will show that, the above operations can be done in eOλ(n) time. For each w, we maintain the Merkle-tree structure MKTw = \{ctv\}v∈T when calculating the hash value SEH.Hash(hk, sw). At first, we set s−1 = (0, 0, . . . , 0) and maintain the structure of MKT−1.
+
+• For each w ∈\{0, 1, . . . , n−1\}, when calculating Hw, we have already maintained the Merkle-tree structure MKTw−1. If we want to update MKTw−1 to MKTw, we only need to modify O(log n) vertices: the path from leaf w to the root. So the first type of operations can be done in eOλ(n) time.
+
+• With the structure MKTw, we only need to access O(log n) vertices to calculate a local opening SEH.Open(hk, sw, i). So the second type of operations can also be done in eOλ(n) time.
+
+• For the third type of operations, again we only need to access O(log n) vertices to calculate a consistency proof SEH.ConsisP(hk, sw, si, i) with MKTw and MKTi. But now the problem is, when we see MKTw, the structure of MKTi has already been modified, i.e., we cannot access the two structures at the same time. Specifically, for any pair of (w, i), the consistency proof will always be for prefix sw[: i]. The b = 2 part of the consistency proof (see Section 4.2) can be determined by only MKTi. Therefore, for each i ∈\{0, 1, . . . , n−1\}, when the MKTi structure is about to be modified, we can store a hint hinti which is the b = 2 part of SEH.ConsisP(hk, sw, si, i) for any w > i. Later, when the evaluation algorithm needs to calculate SEH.ConsisP(hk, sw, si, i), it can use hinti as the b = 2 part, and calculate the b = 1 part based on MKTw. So the third type of operations can also be done in eOλ(n) time.
+
+In conclusion, combining Corollary 5.2, Claim 5.5 and Lemma 3.1, we obtain the following theorem:
+
+Theorem 5.6 (Indistinguishability obfuscation for circuits with proof of equivalence). Assume the following hardness assumptions:
+
+• polynomial hardness of LWE,
+
+• sub-exponentially secure one-way functions, and
+
+• sub-exponentially secure indistinguishability obfuscation for circuits of size poly(λ, log Ncirc, log Nproof).
+
+Then, there exists a (polynomially secure) indistinguishability obfuscator, and for circuit families of size at most Ncirc with propositional equivalence proofs of size at most Nproof, the obfuscated program size, obfuscation time, and evaluator time is bounded by eOλ(Ncirc + Nproof).
+
+5.5 Extension to Sub-Exponentially Secure Obfuscator
+
+\subsection{Extension to Sub-Exponentially Secure Obfuscator}
+5.5 Extension to Sub-Exponentially Secure Obfuscator
+
+The obfuscation construction in Section 5.2 only achieves polynomial security while we have assumed the sub-exponential security of one-way functions and the underlying indistinguishability obfuscator Obf. This asymmetry naturally leads us to explore a quasi-linear obfuscator with subexponential security. In fact, if we additionally assume the existence of sub-exponentially secure FHE, by fine-tuning parameters, we can derive the following theorem:
+
+Theorem 5.7 (Sub-exponentially secure indistinguishability obfuscation for circuits with proof of equivalence). Assume the following hard problems:
+
+• sub-exponential hardness of the LWE assumption,
+
+• sub-exponentially secure one-way functions, and
+
+• sub-exponentially secure indistinguishability obfuscation for circuits of size poly(λ, log Ncirc, log Nproof).
+
+For any ϵ > 0, there exists 2λϵ sub-exponential secure indistinguishability obfuscation and evaluation algorithm for circuit families of size at most Ncirc with propositional proof of maximum size Nproof, and runs in time eOλ(Ncirc + Nproof).
+
+Proof. We will use essentially same construction as Section 5.2 but with different parameter regimes. Specifically, we require following building blocks including sub-exponential secure FHE and subexponential secure SEH with prefix consistency proof (recall that these two primitives are both implied by sub-exponential hardness of LWE):
+
+• 2λϵFHE secure fully hormomorphic encryption FHE = (KeyGen, Enc, Dec, Eval) with security parameter λFHE = λϵ/ϵFHE and output length λFHE = poly(λ) per bit.
+
+• 2λϵPRG secure pseudorandom generator PRG : \{0, 1\}λPRG →\{0, 1\}2λPRG with security parameter λPRG = (λϵ + sLFHE)1/ϵPRG = poly(λ, s).
+
+• 2λϵPRF secure puncturable pseudorandom functions PRFm : \{0, 1\}λPRF ×\{0, 1\}sLFHE →\{0, 1\} with security parameter λPRF = (λϵ + sLFHE)1/ϵPRF = poly(λ, s).
+
+• 2λϵPRF secure puncturable pseudorandom functions PRFσ : \{0, 1\}λPRF×\{0, 1\}sLFHE+1 →\{0, 1\}λPRG.
+
+• 2λϵFHE secure somewhere extractable hash with prefix consistency proof SEH = (Gen, TGen, Hash, Open, Verify, Ext, ConsisP, ConsisV), with security parameter λFHE and maintained by a Merkle-tree structure MKT.
+
+• 2λϵobf secure indistinguishability obfuscator Obf with security parameter λobf = (λϵ+sLFHE)1/ϵobf = poly(λ, s).
+
+One can verify a security proof analogous to Section 5.3 shows the 2λϵ-security of our LiO scheme, because for each hybrid step, if it is based on security of the underlying FHE and SEH scheme, the advantage of adversary can be bounded by
+
+2−λFHEϵFHEnegl(λ) = 2−λϵnegl(λ);
+
+and for the remaining hybrid steps that are based on security of the underlying PRG, PRF and Obf, the advantage of adversary is bounded by
+
+2−λPRGϵPRG = 2−λϵ · 2−sLFHEnegl(λ)
+
+2−λPRFϵPRF = 2−λϵ · 2−sLFHEnegl(λ)
+
+2−λobf ϵobf = 2−λϵ · 2−sLFHEnegl(λ)
+
+6 Multi-Input Functional Encryption with Quasi-Linear Efficiency
+
+\section{Multi-Input Functional Encryption with Quasi-Linear Efficiency}
+6 Multi-Input Functional Encryption with Quasi-Linear Efficiency
+
+In this section, we show how to construct efficient multi-input functional encryption as an application of our quasi-linear locally indistinguishability obfuscator LiO. Specifically, our technique achieves quasi-linear efficiency in following settings: 1) single-input (public-key) functional encryption; and 2) poly(λ)-input secret-key functional encryption.
+
+6.1 Definition: Multi-Input Functional Encryption
+
+\subsection{Definition: Multi-Input Functional Encryption}
+6.1 Definition: Multi-Input Functional Encryption
+
+We first review the notion of multi-input functional encryption (MIFE) adapting from [GGG+14].
+
+Syntax. Let λ denote the security parameter, t = t(λ) denote the function arity where t(λ) is some polynomial over λ. Let L(λ) denote the bit-length of each message. Let Fλ denote a family of of PPT functions that map inputs from (\{0, 1\}L)t to an output in \{0, 1\}Lout(λ). A multi-input functional encryption scheme w.r.t. the family Fλ consists of following PPT algorithms:
+
+• (\{eki\}i∈[t], msk) ←Gen(1λ, 1t, 1L): On input a security parameter λ, the function arity t and message length L, the setup algorithm outputs t encryption keys \{eki\}i∈[t] and a master secret key msk.
+
+• cti ←Enc(eki, xi): Takes in an encryption key eki and a message xi ∈\{0, 1\}L as inputs, and outputs a ciphertext cti.
+
+• skf ←KeyGen(msk, f): On input a master secret key msk and a description of a t-arity function f, the key generation algorithm outputs a functional key skf.
+
+• y ←Dec(skf, ct1, . . . , ctt): On inputs a functional key skf and t ciphertexts ct1, . . . , ctt, the decryption algorithm outputs a decrypted message y.
+
+Correctness. For any λ, t, L, for any t-arity function f and input messages x1, . . . , xt where xi ∈\{0, 1\}L, the following must hold:
+
+Pr
+
+
+
+
+
+(\{eki\}i∈[t], msk) ←Gen(1λ, 1t, 1L),
+
+∀i ∈[t] : cti ←Enc(eki, xi),
+
+skf ←KeyGen(msk, f)
+
+: Dec(skf, ct1, . . . , ctt) = f(x1, . . . , xt)
+
+
+
+= 1.
+
+Security. An adversary A can hold a subset of encryption keys \{eki\}i∈I where I ⊆[t] where I denotes the corrupted subset. We consider an indistinguishability-based security notion, where the adversary is allowed to submit challenge messages after receiving encryption keys \{eki\}i∈I, but before making any key-generation query — such a notion is often referred to as “semi-adaptive” [GKW16, CW14]. Formally, the MIFE scheme is said to be secure w.r.t. to I ⊆[t], iff for any t, L polynomially bounded in the security parameter λ, for any admissible PPTstateful adversary A, the experiments INDFE0,A(λ) and INDFE1,A(λ) are computationally indistinguishable to A, where INDFEb,A(λ) is defined as follows:
+
+Experiment INDFEb,A(λ)
+
+• (\{eki\}i∈[t], msk) ←Gen(1λ, 1t, 1L),
+
+• \{X(0) q , X(1) q \}q ←A(1λ, \{eki\}i∈I) where for b ∈\{0, 1\}, X(b) q := (x(b) q,1, . . . x(b) q,t) ∈   \{0, 1\}Lt
+
+• for all q, let CTq :=  Enc(ek1, x(b) q,1), . . . , Enc(ekt, x(b) q,t) 
+
+• b′ ←AKeyGen(msk,·)(\{CTq\}q)
+
+In the above, the stateful adversary A can pass state to later invocations, and we do not write its state explicitly. We refer to (X(0) q , X(1) q ) as the q-th challenge pair. The adversary A is said to be admissible, if the functions f submitted to the KeyGen(msk, ·) oracle must be from the family Fλ, and moreover, the submitted challenge messages cannot be trivially distinguished by evaluating functional keys. Formally, for any key-generation query f made by A, any challenge pair (x(0) 1 , . . . , x(0) t ) and (x(1) 1 , . . . , x(1) t ), we require f(x(0) 1 , . . . , x(0) t ) = f(x(1) 1 , . . . , x(1) t ) if for any i ∈[t], either of the followings holds:
+
+• x(0) i = x(1) i and i ∈I.
+
+• for some index q, x(0) i = x(0) q,i , and x(1) i = x(1) q,i , where \{x(0) q,i \}i∈[t] and \{x(1) q,i \}i∈[t] correspond to the q-th challenge pair.
+
+Depending on the choice of I, the above gives a unified definition that captures all of the following special cases:
+
+1. Secret-key setting: I = ∅.
+
+2. Public-key setting: I = [t].
+
+3. More general case: I can be any subset of [t].
+
+Definition 3 (Fλ admits a succinct equivalence proof). Fix L and t to be polynomially bounded functions in λ. We say that the family Fλ of t-ary functions on L-bit inputs admits an equivalence proof of size at most N(λ), iff for any λ, for any f ∈Fλ, for any subset J ⊆[t], for any xJ ∈ (\{0, 1\}L)|J| and x′ J ∈(\{0, 1\}L)|J| such that f(xJ, ·) = f(x′ J, ·), there exists an EF proof of size at most N that proves the functional equivalence of f(xJ, ·) and f(x′ J, ·).
+
+In the above, we use the notation f(xJ, ·) to denote the (t −|J|)-ary function derived from f by restricting the subset J of indices to xJ.
+
+6.2 Building Blocks
+
+\subsection{Building Blocks}
+6.2 Building Blocks
+
+We require following building blocks in our construction:
+
+• polynomially secure public-key bit-encryption PKE = (Gen, Enc, Dec) instantiated by Regev’s construction [Reg05] with output length LPKE = poly(λ) per bit.
+
+• 2λϵCOM-secure, perfectly binding non-interactive bit-commitment COM = (Gen, Enc, Dec) instantiated by Regev’s construction [Reg05] with security parameter λCOM = ((t+2)LPKE)1/ϵCOM and commitment randomness length rCOM = poly(λ).
+
+• 2λϵPRF-secure puncturable pseudorandom functions PRF : \{0, 1\}λPRF × \{0, 1\}3LPKE →\{0, 1\}rCOM with security parameter λPRF = ((t + 2)LPKE)1/ϵPRF.
+
+• 2λϵLiO-secure quasi-linear locally indistinguishable obfuscator LiO for O(log n)-equivalent circuits (described in Section 5) with security parameter λLiO = ((t + 2)LPKE)1/ϵLiO.
+
+6.3 Vector Operations for Bit-by-Bit Encryption
+
+\subsection{Vector Operations for Bit-by-Bit Encryption}
+6.3 Vector Operations for Bit-by-Bit Encryption
+
+We will use vector operations because in our scheme we will encrypt an L-bit message bit-by-bit. Our usage of vector operations will be restricted to performing L-fold SIMD operations arising from the message length L.
+
+General notation for vector operations. In general, for any binary function op, given a scalar x and a vector y := (y1, . . . , yL), we use the following notation:
+
+op(x, y) := (op(x, y1), . . . , op(x, yL)) .
+
+For two vectors x := (x1, . . . , xL) and y := (y1, . . . , yL), we define
+
+op(x, y) := (op(x1, y1), . . . , op(xL, yL)) .
+
+Examples. We will be use the following examples of vector operations in our scheme description:
+
+1. Bit-by-bit encryption. We will use bit-by-bit encryption to encrypt an L-bit message. All L bits will share the same encryption keys. Given some PKE key pair (pk, sk) of a bit-encryption scheme, we use the following vector notation:
+
+• c ←PKE.Enc(pk, x): given an L-bit message x = (x1, . . . , xL) ∈\{0, 1\}L, we use this notation to mean for ℓ∈[L], let cℓ:= PKE.Enc(pk, xℓ), and output c := (c1, . . . , cL).
+
+• x ←PKE.Dec(sk, c): given c := (c1, . . . , cL), we use this notation to mean for ℓ∈[L], let xℓ:= PKE.Dec(sk, cℓ), and output x := (x1, . . . , xL).
+
+2. PRF and commitment vector operations. Given L PRF keys k := (k1, . . . , kL), and an L messages x := (x1, . . . , xL) ∈\{\{0, 1\}LPKE\}L each of 3LPKE bits long,
+
+PRF(k, x) := (PRF(k1, x1), . . . , PRF(kL, xL))
+
+Given a vector r := (r1, . . . , rL) of random strings of appropriate length,
+
+COM.Commit(crs, 0; r) := (COM.Commit(crs, 0; r1), . . . , COM.Commit(crs, 0; rL)) ,
+
+3. Other operators. Given a scalar v, vectors x := (x1, . . . , xL) and y := (y1, . . . , yL),
+
+v∥x∥y := (v∥x1∥y1, . . . , v∥xL∥yL)
+
+6.4 Construction
+
+\subsection{Construction}
+6.4 Construction
+
+We present our MIFE construction in this section. Henceforth, we will use the boldface notation xi ∈\{0, 1\}L to denote an L-bit message to make explicit that we treat it as a length-L vector, since we will use the vector notation of Section 6.3.
+
+Parameters. Our scheme uses the following parameters where the CNIZKi and the Gf circuits will be defined later in the scheme.
+
+• For obfuscating the CNIZKi circuit:
+
+– let Ncirc = tL · poly(λ, λPRF) = L · poly′(λ, t);
+
+– let Nproof = tL · poly(λ, λPRF, λCOM) = L · poly′(λ, t); and – let s = O(log(Ncirc + Nproof)).
+
+• For obfuscating the Gf circuit:
+
+– let N′ circ = NF circ + tL · poly(λ, λPRF, λCOM) = NF circ + L · poly′(λ, t) where we use the notation NF circ(λ) to denote an upper bound on the circuit size of any function f ∈Fλ; – for the single-input and secret-key settings, let N′ proof = O(NF circ +tL·poly(λ, λPRF, λCOM)) = O(NF circ) + L · poly′(λ, t); – for the setting where Fλ admits a size-NF proof(λ) equivalence proof, let N′ proof = O(NF circ + tL · poly(λ, λPRF, λCOM) + NF proof) = O(NF circ + NF proof) + L · poly′(λ, t); – let s′ = O(log(N′ circ + N′ proof)).
+
+Construction. We now describe our MIFE construction.
+
+• Gen(1λ, 1t, 1L): Run the corresponding setup algorithms to generate the following keys:
+
+– for each i ∈[t], b ∈\{0, 1\}: let (pkb i, skb i) ←PKE.Gen(1λ); – for i ∈[t], let (pkext i , skext i ) ←PKE.Gen(1λ); – for i ∈[t], sample L puncturable PRF keys ki := (ki,1, . . . , ki,L) each of length λPRF; – let crs ←COM.Gen(1λCOM); and
+
+– for i ∈[t], let ^ CNIZKi ←LiO(1λ, s, Pad(CNIZKi, Ncirc, Nproof)) where CNIZKi is the following circuit:
+
+CNIZKi(vi, c0 i , c1 i , rext i , x, r0 i , r1 i )
+
+– Abort outputting ⊥if any of the following checks fail:
+
+∗vi is an encryption of 0, i.e.,
+
+PKE.Enc(pkext i , 0; rext i ) ?= vi
+
+∗c0 i and c1 i are encryptions of same message x ∈\{0, 1\}L, i.e.,
+
+∀b ∈\{0, 1\} : PKE.Enc(pkb i, x; rb i) ?= cb i,
+
+where rb i := (rb i,1, . . . , rb i,L) denotes the random coins consumed by the L encryption instances.
+
+– Output a NIZK proof πi := PRF(ki, vi∥c0 i ∥c1 i ).
+
+// See Section 6.3 regarding vector notation used for PKE.Enc, ?= and ∥functions.
+
+\begin{figure}[t]
+\centering
+% Option A (robust): include cropped vector PDF
+\includegraphics[width=0.95\linewidth]{figures\_pdf/fig\_p049\_01.pdf}
+% Option B (editable): TikZ approximation (may need cleanup)
+%\input{figures\_tikz/fig\_p049\_01.tex}
+\caption{Figure 4: Circuit CNIZKi.}
+\end{figure}
+
+Then, output encryption keys eki = \{pkext i , pk0 i , pk1 i , ^ CNIZKi\} for i ∈[t] and a master secret key msk = \{skext i , sk0 i , sk1 i , ki\}i∈[t] ∪\{crs\}.
+
+In the above each ^ CNIZKi is the NIZK construction due to Sahai and Waters [SW14] but now using our LiO instead.
+
+• Enc(eki, xi): Uniformly sample randomness rext i and rb i := (rb i,1, . . . , rb i,L) for b ∈\{0, 1\}, then compute a single label vi ←PKE.Enc(pkext i , 0; rext i ),
+
+two ciphertext vectors cb i ←PKE.Enc(pkb i, xi; rb i), ∀b ∈\{0, 1\},
+
+and an auxiliary proof vector
+
+πi ←^ CNIZKi(vi, c0 i , c1 i , rext i , xi, r0 i , r1 i ).
+
+Output the resulting ciphertext cti := (vi, c0 i , c1 i , πi).
+
+• KeyGen(msk, f): Output the obfuscated program
+
+skf ←LiO(1λ, s′, Pad(Gf, N′ circ, N′ proof))
+
+where Gf is the circuit described in Figure 5.
+
+Gf(\{vi, c0 i , c1 i , πi\}i∈[t])
+
+– Decrypt x0 i = PKE.Dec(sk0 i , c0 i ) for each i ∈[t].
+
+– For each i ∈[t], check the validity of πi and abort if false:
+
+COM.Commit (crs, 0; πi) ?= COM.Commit   crs, 0; PRF(ki, vi∥c0 i ∥c1 i ) 
+
+– Output f(x0 1, . . . , x0 t ).
+
+// See Section 6.3 regarding vector notation used for PKE.Dec, COM.Commit, and ?= functions.
+
+\begin{figure}[t]
+\centering
+% Option A (robust): include cropped vector PDF
+\includegraphics[width=0.95\linewidth]{figures\_pdf/fig\_p050\_01.pdf}
+% Option B (editable): TikZ approximation (may need cleanup)
+%\input{figures\_tikz/fig\_p050\_01.tex}
+\caption{Figure 5: Circuit Gf.}
+\end{figure}
+
+• Dec(skf, ct1, . . . , ctt): parse each cti := (vi, c0 i , c1 i , πi), then output skf(\{vi, c0 i , c1 i , πi\}i∈[t]).
+
+6.5 Security Proofs
+
+\subsection{Security Proofs}
+6.5 Security Proofs
+
+We will use a sequence of hybrids to prove the security of our MIFE scheme. In the first hybrid the challenger encrypts \{X(0) q \}q = \{x(0) q,1, . . . , x(0) q,t \}q, and in the last hybrid the challenger encrypts
+
+\{X(1) q \}q = \{x(1) q,1, . . . , x(1) q,t \}q.
+
+Experiment Real0. This experiment is identically distributed as INDFE0,A(λ). However, upon encryption queries, instead of computing the NIZK proofs using the obfuscated ^ CNIZKi programs, the challenger instead computes the NIZK proofs directly using the PRF and the master secret key. Specifically, for the q-th challenge pair (\{x(0) q,i \}i∈[t], \{x(1) q,i \}i∈[t]), the challenger responds with
+
+vq,i ←PKE.Enc(pkext i , 0)
+
+c(0) q,i ←PKE.Enc(pk0 i , x(0) q,i )
+
+c(1) q,i ←PKE.Enc(pk1 i , x(0) q,i )
+
+and corresponding NIZK proof πq,i = PRF(ki, vq,i∥c(0) q,i ∥c(1) q,i ).
+
+Experiment Real∗ 0. This hybrid is the same as Real0, except that the challenger computes vq,i as encryption of 1: vq,i ←PKE.Enc(pkext i , 1),
+
+and changes the second component of the ciphertexts to encrypt x(1) q,i instead:
+
+c(0) q,i ←PKE.Enc(pk0 i , x(0) q,i )
+
+c(1) q,i ←PKE.Enc(pk1 i , x(1) q,i ).
+
+Further, as before, it computes the NIZK proof as πq,i = PRF(ki, vq,i∥c(0) q,i ∥c(1) q,i ). Since the secret keys skext i and sk1 i are never used anywhere, it follows from the semantic security of PKE that no PPT adversary can distinguish Real0 and Real∗ 0 with more than negligible probability. Observe that due to the semantic security of the PKE scheme, it holds that except with negligible probability, the labels vi of all challenge queries are distinct. Therefore, in Real∗ 0 and all future hybrids, we may assume that the vi’s for all challenge queries are distinct — in case not, the experiment can simply abort outputting ⊥, and this introduces only a negligibly small statistical distance.
+
+Experiment Hyb. This hybrid is the same as Real∗ 0, except that each functional key skf decrypts the ciphertext c1 i instead of c0 i for i ∈[t]. To show the indistinguishability of Hyb and Real∗ 0, we need to go through a sequence of intermediate hybrids.
+
+Experiment Hybbv. This hybrid is indexed by a label bv = (bv1, . . . , bvt), and the label bv (when viewed as an integer) is upper bounded by 2tLPKE. If Gf’s input label v = (v1, . . . , vt) < bv then for each functional key skf, the inputs of f are decrypted from c1 i instead of c0 i :
+
+Modified Gf(\{vi, c0 i , c1 i , πi\}i∈[t])
+
+• Decrypt xb i = PKE.Dec(skb i, cb i) for each i ∈[t], b ∈\{0, 1\}.
+
+• Let v = (v1, . . . , vt).
+
+• For each i ∈[t], check the validity of πi and abort if false:
+
+COM.Commit (crs, 0; πi) ?= COM.Commit   crs, 0; PRF(ki, vi∥c0 i ∥c1 i ) 
+
+• If v < bv, output f(x1 1, . . . , x1 t ). Otherwise, output f(x0 1, . . . , x0 t ).
+
+Clearly Hyb0 is functionally equivalent to Real∗ 0 while Hyb2tLPKE is functionally equivalent to Hyb with an EF proof of size at most O(NF circ + tL · poly(λ, λPRF, λCOM)) = O(NF circ) + L · poly′(λ, t). Therefore, it suffices to prove that Pr[A(Hybbv) = 1] −Pr[A(Hybbv+1) = 1] = 2−tLPKEnegl(λ).
+
+Observe that Hybbv and Hybbv+1 can only differ by outputs on v = bv = (bv1, . . . , bvt). Recall that all the encryption queries are made upfront before the KeyGen queries. Let \{vq,i, c(0) q,i , c(1) q,i \}i∈[t]
+
+be the q-th challenge ciphertext given to A, let \{x(0) q,i , x(1) q,i \}i∈[t] be the corresponding q-th plaintext pair queried. We can define (bc0 i ,bc1 i ) as follows:
+
+(bc0 i ,bc1 i ) =
+
+( c(0) q,i , c(1) q,i if bvi = vq,i for some index q ⊥, ⊥ otherwise (1)
+
+Similarly, we define (bx0 i , bx1 i ) as follows:
+
+(bx0 i , bx1 i ) =
+
+( x(0) q,i , x(1) q,i if bvi = vq,i for some index q ⊥, ⊥ otherwise (2)
+
+As we remarked at the end of Real∗ 0, we may assume that if the experiment does not abort, then all the vi labels are distinct, and thus the above definition of bc0 i ,bc1 i , bx0 i , bx1 i does not have ambiguity. Now we use a sequence of inner hybrids to show the indistinguishability of Hybbv and Hybbv+1.
+
+Experiment Hybc bv. This hybrid is indexed by a pair of PKE ciphertexts c = (c0, c1) corresponding to the encryption of a single bit (notice that c is bounded by 22LPKE). Hybc bv is almost the same as Hybbv, except that we add an extra validation check for any input ciphertext where vi = bvi and ((c0 i )ℓ, (c1 i )ℓ) < c in the Gf circuit to be obfuscated when computing a functional key skf:
+
+Modified Gf(\{vi, c0 i , c1 i , πi\}i∈[t])
+
+• Decrypt xb i = PKE.Dec(skb i, cb i) for each i ∈[t], b ∈\{0, 1\}.
+
+• Let v = (v1, . . . , vt).
+
+• For each i ∈[t]: check the following and abort if false:
+
+– Check the validity of πi:
+
+COM.Commit (crs, 0; πi) ?= COM.Commit   crs, 0; PRF(ki, vi∥c0 i ∥c1 i ) 
+
+– For each ℓ∈[L], if vi = bvi and ((c0 i )ℓ, (c1 i )ℓ) < c, check if at least one of following conditions holds where bc0 i and bc1 i are defined in Equation (1):
+
+∗PKE.Dec(skext i , vi) = 0, i ∈I and (x0 i )ℓ= (x1 i )ℓ. ∗((c0 i )ℓ, (c1 i )ℓ) = ((bc0 i )ℓ, (bc1 i )ℓ).
+
+• If v < bv, output f(x1 1, . . . , x1 t ). Otherwise, output f(x0 1, . . . , x0 t ).
+
+Since the extra validation check is not executed when c = 0, Hyb0 bv and Hybbv are indistinguishable due to the security of underlying LiO, and the fact that the two circuits have a trivial equivalence proof in EF of size O(NF circ + tL · poly(λ, λPRF, λCOM)) = O(NF circ) + L · poly′(λ, t). We now argue that Pr[A(Hybc bv) = 1] −Pr[A(Hybc+1 bv ) = 1] = 2−(t+2)LPKEnegl(λ).
+
+through a sequence of hybrids.
+
+Experiment Hybc,0 bv . This hybrid is same as Hybc bv.
+
+Experiment Hybc,1 bv . This hybrid is almost same as Hybc,0 bv , except that for i ∈I, if PKE.Dec(skext i , bvi) ̸= 0 or PKE.Dec(sk0 i , c0) ̸= PKE.Dec(sk1 i , c1), then we use the following modified CNIZKi circuit when computing eki.
+
+Modified CNIZKi(vi, c0 i , c1 i , rext i , x, r0 i , r1 i )
+
+• Abort outputting ⊥if either of the following checks fails: (▲)
+
+– PKE.Enc(pkext i , 0; rext i ) = vi;
+
+– ∀b ∈\{0, 1\} : PKE.Enc(pkb i, x; rb i) = cb i.
+
+• Output a NIZK proof πi consisting of (πi)ℓfor each bit ℓ∈[L] defined as follows: let
+
+(πi)ℓ= PRF
+
+
+
+ki,ℓ\{(bvi∥c0∥c1)\} | \{z \} hard-wired
+
+, vi∥(c0 i )ℓ∥(c1 i )ℓ
+
+
+
+
+
+where the hard-wired value ki,ℓ\{(bvi∥c0∥c1)\} denotes the PRF key ki,ℓpunctured at the point bvi∥c0∥c1.
+
+Further, under the same condition PKE.Dec(skext i , bvi) ̸= 0 or PKE.Dec(sk0 i , c0) ̸= PKE.Dec(sk1 i , c1), whenever the challenger needs to compute the NIZK proofs for answering encryption queries for i ∈I, it uses the punctured key ki,ℓ\{(bvi∥c0∥c1)\} if the ciphertext is not equal to (bvi∥c0∥c1); else, it uses the hard-wired value PRF(ki,ℓ, bvi∥c0∥c1) as the proof. Observe that the CNIZKi checks the conditions (▲) on vi, \{(c0 i )ℓ, (c1 i )ℓ\}ℓ∈[L]. Due to the correctness of the PKE scheme, we know that the same conditions cannot hold for bvi, c0 and c1. Therfore, if the CNIZKi circuit actually reaches the step of generating the proof πi, then the input to the PRF cannot be bvi||c0||c1. Due to the puncturing correctness of the PRF, the modified CNIZKi circuit must be functionally equivalent to the original one. Moreover, by Lemma A.1 and Lemma A.2, the equivalence of CNIZKi and the above modified one can be proven in EF with proof length at most tL · poly(λ, λPRF) = L · poly′(λ, t). So the indistinguishability of Hybc,1 bv and Hybc,0 bv follows from the security of underlying LiO, that is, Pr[A(Hybc,1 bv ) = 1] −Pr[A(Hybc,2 bv ) = 1] = 2−λLiOϵLiOnegl(λ) = 2−(t+2)LPKEnegl(λ).
+
+Experiment Hybc,2 bv . This hybrid is almost same as Hybc,1 bv , except that we modify the Gf circuit when computing a functional key skf as:
+
+Modified Gf(\{vi, c0 i , c1 i , πi\}i∈[t])
+
+• Decrypt xb i = PKE.Dec(skb i, cb i) for each i ∈[t], b ∈\{0, 1\}.
+
+• Let v = (v1, . . . , vt).
+
+• For each i ∈[t], ℓ∈[L]:
+
+– If vi ̸= bvi or ((c0 i )ℓ, (c1 i )ℓ) ̸= c, check the validity of (πi)ℓusing the punctured PRF key:
+
+COM.Commit(crs, 0; (πi)ℓ) ?= COM.Commit
+
+
+
+crs, 0; PRF(ki,ℓ\{(bvi∥c0∥c1)\} | \{z \} hard-wired
+
+, vi∥(c0 i )ℓ∥(c1 i )ℓ)
+
+
+
+
+
+– Else if vi = bvi and ((c0 i )ℓ, (c1 i )ℓ) = c, check the following:
+
+
+
+% --- OCR merged equation (eq:recovered_2) ---
+\begin{align}
+\label{eq:recovered_2}
+\operatorname{COM} . C o m m i t\left(c r s, 0 ;\left(\boldsymbol{\pi}_{i}\right)_{\ell}\right) \stackrel{?}{ &= } \operatorname{COM} . C o m m i t(c r s, 0 ; \underbrace{\operatorname{PRF}\left(k_{i, \ell}, \widehat{v}_{i}\left\|c^{0}\right\| c^{1}\right.}_{\text {hard-wired }})) \tag{$\star$}
+\end{align}
+% --- end OCR merged equation ---
+
+
+COM.Commit(crs, 0; (πi)ℓ) ?= COM.Commit
+
+
+
+crs, 0; PRF(ki,ℓ, bvi∥c0∥c1 | \{z \} hard-wired
+
+)
+
+
+
+ (⋆)
+
+– If vi = bvi and ((c0 i )ℓ, (c1 i )ℓ) < c, check if at least one of following conditions holds:
+
+∗PKE.Dec(skext i , vi) = 0, i ∈I and (x0 i )ℓ= (x1 i )ℓ. ∗((c0 i )ℓ, (c1 i )ℓ) = ((bc0 i )ℓ, (bc1 i )ℓ).
+
+• If v < bv, output f(x1 1, . . . , x1 t ). Otherwise, output f(x0 1, . . . , x0 t ).
+
+Observe that the modification does not the affect the functionality of the circuit, and there exists some EF proof of equivalence of size O(NF circ) + tL · poly(λ, λPRF, λCOM) = O(NF circ) + L · poly′(λ, t) due to Lemma A.1. Therefore, by the security of underlying LiO, we have Pr[A(Hybc,1 bv ) = 1] −Pr[A(Hybc,2 bv ) = 1] = 2−λLiOϵLiOnegl(λ) = 2−(t+2)LPKEnegl(λ).
+
+Experiment Hybc,3 bv . This hybrid is almost same as Hybc,2 bv , except that we further modify the Gf circuit when computing a functional key skf as follows:
+
+
+
+% --- OCR merged equation (eq:recovered_1) ---
+\begin{align}
+\label{eq:recovered_1}
+\text { Modified } \mathrm{CNIZK}_{i} &\left(v_{i}, \mathbf{c}_{i}^{0}, \mathbf{c}_{i}^{1}, r_{i}^{\mathrm{ext}}, \mathbf{x}, \mathbf{r}_{i}^{0}, \mathbf{r}_{i}^{1}\right) \tag{$\Lambda$}
+\end{align}
+% --- end OCR merged equation ---
+
+
+Modified Gf(\{vi, c0 i , c1 i , πi\}i∈[t])
+
+• Decrypt xb i = PKE.Dec(skb i, cb i) for each i ∈[t], b ∈\{0, 1\}.
+
+• Let v = (v1, . . . , vt).
+
+• For each i ∈[t], ℓ∈[L]:
+
+– If vi ̸= bvi or ((c0 i )ℓ, (c1 i )ℓ) ̸= c, check validity of (πi)ℓusing punctured PRF key:
+
+COM.Commit(crs, 0; (πi)ℓ) ?= COM.Commit
+
+
+
+crs, 0; PRF(ki,ℓ\{(bvi∥c0∥c1)\} | \{z \} hard-wired
+
+, vi∥(c0 i )ℓ∥(c1 i )ℓ)
+
+
+
+
+
+– Else, we have vi = bvi and ((c0 i )ℓ, (c1 i )ℓ) = c.
+
+∗If c ̸= ((bc0 i )ℓ, (bc1 i )ℓ) and meanwhile not all of the following hold: i ∈I, PKE.Dec(skext i , vi) = 0, and (x0 i )ℓ= (x1 i )ℓ, then check the following:
+
+COM.Commit(crs, 0; (πi)ℓ) ?= com∗ i,ℓ (⋄)
+
+where each com∗ i,ℓis chosen to be a commitment of 1 using true random coins.
+
+
+
+% --- OCR merged equation (eq:recovered_3) ---
+\begin{align}
+\label{eq:recovered_3}
+\operatorname{COM} . C o m m i t\left(\operatorname{crs}, 0 ;\left(\boldsymbol{\pi}_{i}\right)_{\ell}\right) \stackrel{?}{ &= } \operatorname{com}_{i, \ell}^{*} \tag{$\diamond$}
+\end{align}
+% --- end OCR merged equation ---
+
+
+∗Else, check COM.Commit(crs, 0; (πi)ℓ) ?= COM.Commit
+
+
+
+crs, 0; PRF(ki,ℓ, bvi∥c0∥c1) | \{z \} hard-wired
+
+
+
+
+
+– If vi = bvi and ((c0 i )ℓ, (c1 i )ℓ) < c, check if at least one of following conditions holds:
+
+∗PKE.Dec(skext i , vi) = 0, i ∈I and (x0 i )ℓ= (x1 i )ℓ.
+
+∗((c0 i )ℓ, (c1 i )ℓ) = ((bc0 i )ℓ, (bc1 i )ℓ).
+
+• If v < bv, output f(x1 1, . . . , x1 t ). Otherwise, output f(x0 1, . . . , x0 t ).
+
+The difference between Hybc,2 bv and Hybc,3 bv is that we changed the branch marked (⋆) in Hybc,2 bv into two separate cases in Hybc,3 bv . To argue the indistinguishability of these experiments, observe that in Hybc,2 bv ,
+
+• If either i /∈I or PKE.Dec(skext i , bvi) ̸= 0, or PKE.Dec(sk0 i , c0) ̸= PKE.Dec(sk1 i , c1), then the key ki,ℓis not needed in the experiment since either i /∈I is honest and the challenger need not give
+
+A the obfuscated ^ CNIZKi; or the CNIZKi circuit uses the punctured key ki,ℓ\{bvi∥c0∥c1\} instead. Recall also that the challenger always uses the punctured key ki,ℓ\{(bvi∥c0∥c1)\} or a hard-wired value PRF(ki,ℓ, bvi∥c0∥c1) for answering encryption queries, so the key ki,ℓis also never used in answering encryption queries.
+
+• If additionally, c ̸= ((bc0 i )ℓ, (bc1 i )ℓ), then the PRF evaluation outcome PRF(ki,ℓ, bvi∥c0∥c1) is never disclosed to the adversary A in any encryption query. The only place this evaluation outcome is used is in the (⋆) line of the (modified) Gf circuit in Hybc,2 bv .
+
+Due to the security of the puncturable PRF, under these conditions, we can replace the righthand-side of line (⋆) with a commitment of 0 under fresh random coins. Due to the security of the commitment, we then replace each commitment of 0 with a commitment of 1 which leads to Hybc,3 bv . Thus, we have Pr[A(Hybc,2 bv ) = 1] −Pr[A(Hybc,3 bv ) = 1]
+
+≤2−λLiOϵLiO negl(λ) + 2−λPRFϵPRFnegl(λ) + 2−λCOMϵCOMnegl(λ)
+
+=2−(t+2)LPKEnegl(λ).
+
+Experiment Hybc,4 bv . This hybrid is almost same as Hybc,3 bv , except that we further modify the Gf circuit when computing a functional key skf as follows:
+
+Modified Gf(\{vi, c0 i , c1 i , πi\}i∈[t])
+
+• Decrypt xb i = PKE.Dec(skb i, cb i) for each i ∈[t], b ∈\{0, 1\}.
+
+• Let v = (v1, . . . , vt).
+
+• For each i ∈[t], ℓ∈[L]:
+
+– If vi ̸= bvi or ((c0 i )ℓ, (c1 i )ℓ) ̸= c, check that
+
+COM.Commit(crs, 0; (πi)ℓ) ?= COM.Commit   crs, 0; PRF(ki,ℓ\{(bvi∥c0∥c1)\}, vi∥(c0 i )ℓ∥(c1 i )ℓ) 
+
+– Else, we have vi = bvi and ((c0 i )ℓ, (c1 i )ℓ) = c.
+
+∗Check that either c = ((bc0 i )ℓ, (bc1 i )ℓ), or all of the following hold: i ∈I, PKE.Dec(skext i , vi) = 0, and (x0 i )ℓ= (x1 i )ℓ.
+
+∗Check COM.Commit(crs, 0; (πi)ℓ) ?= COM.Commit   crs, 0; PRF(ki,ℓ, bvi∥c0∥c1) 
+
+– If vi = bvi and ((c0 i )ℓ, (c1 i )ℓ) < c, check if at least one of following conditions holds:
+
+∗PKE.Dec(skext i , vi) = 0, i ∈I and (x0 i )ℓ= (x1 i )ℓ. ∗((c0 i )ℓ, (c1 i )ℓ) = ((bc0 i )ℓ, (bc1 i )ℓ).
+
+• If v < bv, output f(x1 1, . . . , x1 t ). Otherwise, output f(x0 1, . . . , x0 t ).
+
+Since the commitment is perfectly binding, in Hybc,3 bv , the check in line (⋄) never succeeds. Therefore, the modified Gf circuits of Hybc,3 bv and Hybc,4 bv are equivalent, and they enjoy an EF equivalence proof of size at most O(NF circ)+tL·poly(λ, λPRF, λCOM) = O(NF circ)+Lpoly′(λ, t) due to Lemma A.2, assuming we use Regev’s encryption [Reg05] to instantiate the commitment scheme. Now, by the security of LiO, we have that Pr[A(Hybc,3 bv ) = 1] −Pr[A(Hybc,4 bv ) = 1] = 2−λLiOϵLiOnegl(λ) = 2−(t+2)LPKEnegl(λ).
+
+We next argue that Hybc,4 bv is indistinguishable from Hybc+1 bv . Due to the puncturing correctness of the PRF, the modified Gf circuits in Hybc,4 bv and Hybc+1 bv are equivalent. Further, due to Lemma A.1, there is an EF proof of equivalence of size at most O(NF circ) + tL · poly(λ, λPRF, λCOM) = O(NF circ) + L · poly′(λ, t). Therefore, by the security of the underlying LiO, we have Pr[A(Hybc,4 bv ) = 1] −Pr[A(Hybc+1 bv ) = 1] = 2−λLiOϵLiOnegl(λ) = 2−(t+2)LPKEnegl(λ).
+
+Experiment Hyb∗ bv. This experiment is otherwise identical to Hyb22LPKE bv except that the Gf circuit is further modified to the following:
+
+Modified Gf(\{vi, c0 i , c1 i , πi\}i∈[t])
+
+• Decrypt xb i = PKE.Dec(skb i, cb i) for each i ∈[t], b ∈\{0, 1\}.
+
+• Let v = (v1, . . . , vt).
+
+• For each i ∈[t], check the validity of πi:
+
+COM.Commit (crs, 0; πi) ?= COM.Commit   crs, 0; PRF(ki, vi∥c0 i ∥c1 i ) 
+
+• For every i ∈[t]: if vi = bvi, check that
+
+– if PKE.Dec(skext i , bvi) = 0, then i ∈I and x0 i = x1 i , – else, (c0 i , c1 i ) = (bc0 i ,bc1 i ) and (x0 i , x1 i ) = (bx0 i , bx1 i ) where (bx0 i , bx1 i ) are defined in Equation (2).
+
+• If v < bv, output f(x1 1, . . . , x1 t ). Otherwise, output f(x0 1, . . . , x0 t ).
+
+Recall that in Hyb22LPKE bv , if vi = bvi, we check that for each ℓ∈[L], either ((c0 i )ℓ, (c1 i )ℓ) = ((bc0 i )ℓ, (bc1 i )ℓ) (henceforth called the first condition), or all of the following hold: PKE.Dec(skext i , vi) = 0, i ∈I and (x0 i )ℓ= (x1 i )ℓ(henceforth called the second condition). The difference between Hyb22LPKE bv and Hyb∗ bv is that in Hyb22LPKE bv , we check that for each coordinate ℓ∈[L], either the first condition or the second condition holds, whereas in Hyb∗ bv, we check that the first or the second condition simultaneously holds for all coordinates ℓ∈[L]. Note that if PKE.Dec(skext i , bvi) = 0, then (bc0 i )ℓ= (bc1 i )ℓ= ⊥for every ℓ∈[L]. Therefore, assume that for each coordinate, either the first or second condition holds like in Hyb22LPKE bv . Then, it must be that
+
+• if PKE.Dec(skext i , vi) = 0, then the second condition simultaneously holds for all ℓ∈[L];
+
+• otherwise, the first condition simultaneously holds for all ℓ∈[L].
+
+This is why we can switch from Hyb22LPKE bv to Hyb∗ bv. Proving the equivalence of the modified Gf circuits of the two experiments would require proving the correctness of the PKE scheme, since we need to prove that ciphertext equality ((c0 i )ℓ, (c1 i )ℓ) = ((bc0 i )ℓ, (bc1 i )ℓ) implies decrypted plaintext equality ((x0 i )ℓ, (x1 i )ℓ) = ((bx0 i )ℓ, (bx1 i )ℓ). Due to Lemma A.2, proving the equivalence of the modified Gf circuits of the two experiments would involve an EF proof of size O(NF circ) + tLpoly(λ, λPRF, λCOM) = O(NF circ) + L · poly′(λ, t). Hence, by the security of the underlying LiO, we have
+
+Pr[A(Hyb∗ bv) = 1] −Pr[A(Hyb22LPKE bv ) = 1] = 2−λLiOϵLiOnegl(λ) = 2−(t+2)LPKEnegl(λ).
+
+Experiment Hybswitch bv . This hybrid is almost same as Hyb∗ bv, except that we further modify the circuit Gf when generating the functional key skf as follows:
+
+Modified Gf(\{vi, c0 i , c1 i , πi\}i∈[t])
+
+• Decrypt xb i = PKE.Dec(skb i, cb i) for each i ∈[t], b ∈\{0, 1\}.
+
+• Let v = (v1, . . . , vt).
+
+• For each i ∈[t], check that
+
+COM.Commit (crs, 0; πi) ?= COM.Commit   crs, 0; PRF(ki, vi∥c0 i ∥c1 i ) 
+
+• For every i ∈[t]: if vi = bvi, check that (♣)
+
+– if PKE.Dec(skext i , bvi) = 0, then i ∈I and x0 i = x1 i , – else, (c0 i , c1 i ) = (bc0 i ,bc1 i ) and (x0 i , x1 i ) = (bx0 i , bx1 i ).
+
+• If v < bv + 1, output f(x1 1, . . . , x1 t ). Otherwise, output f(x0 1, . . . , x0 t ).
+
+The functionality of skf can only differ by the output of the case v = bv, in which we now output f(x1 1, . . . , x1 t ) instead of f(x0 1, . . . , x0 t ). When v = bv, the condition (♣) must hold for all i ∈[t], so the admissibility of adversary guarantees f(x0 1, . . . , x0 t ) = f(x1 1, . . . , x1 t ). Therefore, if we want to prove in EF that the modified Gf circuits of Hybswitch bv and Hyb∗ bv are equivalent, we mainly need to prove in EF that if (♣) holds for all i ∈[t], then f(x0 1, . . . , x0 t ) = f(x1 1, . . . , x1 t ). In the most general case, we may need to iterate through all possible messages for i ∈I for proving this statement, which introduces an exponential in input-length blowup in the security reduction, which implies that we will suffer from polynomial in input-length overhead in the efficiency of the scheme. However, for the following special cases, we can avoid this blowup:
+
+• Single-input. This is the case when t = 1. If the condition (♣) holds, then x0 1 and x1 1 are either identical or equal to the challenge pair (bx0 1, bx1 1). In both cases, the fact that f(x0 1, . . . , xt 1) = f(x1 1, . . . , xt 1) can be proven simply by evaluating the function f on the two inputs. Therefore, the functional equivalence of the modified Gf circuits can be proven in EF with proof length at most O(NF circ) + tL · poly(λ, λPRF, λCOM) = O(NF circ) + L · poly′(λ, t).
+
+• Secret-key. In this case I = ∅. If the condition (♣) holds, then each (x0 i , x1 i ) can only be the challenge message (bx0 i , bx1 i ). So the functional equivalence can be efficiently verified by evaluating on both inputs. Therefore, the modified Gf circuits of the two experiments enjoy an EF proof of equivalence of size at most O(NF circ) + tL · poly(λ, λPRF, λCOM) = O(NF circ) + L · poly′(λ, t).
+
+• Proof of equivalence. Suppose that the function family Fλ admits an efficient EF proof of equivalence of size NF proof(λ, t, L). Therefore, the two equivalence of the modified Gf circuits of the two experiments can be proven in EF with proof length at most O(NF circ + tL · poly(λ, λPRF, λCOM)+NF proof) = O(NF circ +NF proof)+L·poly′(λ, t) which is polynomially bounded in λ as long as NF proof is polynomially bounded.
+
+In all of the above cases, we have the following due to the security of the underlying LiO: Pr[A(Hyb∗ bv) = 1] −Pr[A(Hybswitch bv ) = 1] = 2−tLPKEnegl(λ).
+
+Notice that the only difference between Hybswitch bv and Hybbv+1 is the extra validation check (♣). Relying on a reverse sequence of hybrid experiments, we can undo the validation check (♣) and prove that Pr[A(Hybswitch bv ) = 1] −Pr[A(Hybbv+1) = 1] = 2−tLPKEnegl(λ).
+
+Therefore, we have Pr[A(Hybbv) = 1] −Pr[A(Hybbv+1) = 1] = 2−tLPKEnegl(λ),
+
+and |Pr[A(Real∗ 0) = 1] −Pr[A(Hyb) = 1]| = |Pr[A(Hyb0) = 1] −Pr[A(Hyb2tLPKE) = 1]| = negl(λ).
+
+Experiment Real1. This hybrid is the experiment INDFE1,A(λ). By a reverse hybrid sequence, we can prove Hyb and Real1 are indistinguishable. In conclusion, Real0 and Real1 are indistinguishable.
+
+Theorem 6.1 (Multi-input functional encryption). The construction in Section 6.4 is a polynomially secure multi-input functional encryption scheme for the following settings:
+
+1. single-input;
+
+2. secret-key settings; and
+
+3. the family Fλ admits a polynomially-sized equivalence proof.
+
+Further, the scheme enjoys the following performance bounds:
+
+• Single-input or secret-key settings: the encryption time is eOλ(L·poly(t)), the key size, key generation time, and decryption time are bounded by eOλ(NF circ + L · poly(t)).
+
+• Fλ admits size-NF proof equivalence proof: the encryption time is eOλ(L · poly(t)), the key
+
+size, key generation time, and decryption time are bounded by eOλ(NF circ + L · poly(t) + NF proof).
+
+In all of the above cases, assuming that t = poly(λ), then the costs have only quasi-linear dependency on the message length L, and the maximum circuit size of the function family F. For the case when Fλ admits size-NF proof equivalence proof, there is also a quasi-linear dependence on the proof size NF proof.
+
+6.6 Barriers for Further Improvement
+
+\subsection{Barriers for Further Improvement}
+6.6 Barriers for Further Improvement
+
+Necessity of equivalence proof for MIFE. Our results raises the following natural question: for the more general case (not just restricted to single-input or secret-key settings), can we achieve quasi-linear-cost MIFE without relying on proof of equivalence? There seems to be an inherent barrier towards this goal. In particular, if we could indeed have an arity-2 public-key MIFE with quasi-linear efficiency, then it would lead to an iO scheme with quasi-linear efficiency (without proofs of equivalence). However, this would violate the conjectured input-length barrier for iO without proof of equivalence [JJ22].
+
+Theorem 6.2. Suppose there is an arity-2, public-key MIFE scheme for 2-input circuits of maximum size N, and the scheme enjoys T(λ, N) decryption time. Then, there exists an indistinguishability obfuscation scheme for (single-input) circuits of size N whose evaluation time is bounded by T(λ, eO(N)).
+
+The construction is very similar to what Goldwasser et al. [GGG+14] described. To obfuscate a circuit f ∈F with L-bit inputs, we run ek1, ek2, msk ←MIFE.Gen(1λ, L), skU ← MIFE.KeyGen(msk, U) where U is the universal circuit defined as U(f, x) = f(x), and ct1 ← MIFE.Enc(ek1, f). We then output the obfuscated circuit which includes (ek2, skU, ct1). To evaluate the obfuscated circuit on the input x ∈\{0, 1\}L, simply call ct2 ←MIFE.Enc(ek2, x), and then output MIFE.Dec(skU, ct1, ct2). Therefore, if the MIFE scheme’s evaluation cost is quasi-linear in the size of U which is quasi-linear in the maximum size of any circuit f ∈Fλ [Val76], then the resulting iO scheme would enjoy evaluation time that is quasi-linear in the maximum circuit size of Fλ. Security of the iO scheme follows in a straightforward manner from the security of the underlying MIFE.
+
+Necessity of polynomial dependence on t for secret-key MIFE. Another interesting question is whether the polynomial dependence on the function arity t is necessary. Below, we prove that for the secret-key setting without proofs of equivalence, this polynomial dependency on t is inherent, assuming the input-length barrier of iO [JJ22]. Specifically, we show that a secret-key MIFE scheme with quasi-linear efficiency would imply an iO with quasi-linear efficiency without proofs of equivalence. An interesting direction for future research is to understand whether the polynomial dependence on t is necessary if we have a succinct proof of equivalence.
+
+Theorem 6.3. Suppose there exists a secret-key MIFE for arbitrary-arity circuits of size at most N and per-message length L = 1, and the scheme enjoys decryption time T(λ, N). Then, there exists an indistinguishability obfuscatior for arbitrary circuits of size N whose evaluation time is bounded by T(λ, eO(N)).
+
+Proof. The construction is similar to what earlier works described [GGG+14,AJ15]. Given a secretkey MIFE scheme MIFE = (MIFE.Gen, MIFE.Enc, MIFE.KeyGen, MIFE.Dec), and a circuit C whose size is bounded by some a-priori bound N and whose input length is L, we can obfuscate C as follows, Below, let C = (C1, . . . , CN) be the bit-by-bit encoding of the circuit C, and let x = (x1, . . . , xL) be the bit-by-bit encoding of the string x. Run (ek1, . . . , ekN+L+1 ←MIFE.Gen(1λ, 1N+L, 1). The obfuscated circuit consists of the following terms:
+
+• sk ←MIFE.KeyGen(U), where U is a universal circuit such that U(C1, . . . , CN, x1, . . . , xL) = C(x).
+
+• ctC ←(MIFE.Enc(ek1, C1), . . . , MIFE.Enc(ekN, CN)).
+
+• ctx,0 = \{ci,0\}i∈[L] where ci,0 = MIFE.Enc(ekN+i, 0).
+
+• ctx,1 = \{ci,1\}i∈[L] where ci,1 = MIFE.Enc(ekN+i, 1).
+
+This information is sufficient to reconstruct C(x) for an arbitrary L-bit input x = (x1, . . . , xL): to reconstruct C(x), simply call MIFE.Dec(sk, ctC, \{cℓ,xℓ\}ℓ∈[L]). Security of the resulting iO construction follows from the security of the MIFE scheme: consider two functionally equivalent circuits C and C′. The security of the secret-key MIFE ensures that (ctC, ctx,0, ctx,1) and (ctC′, ctx,0, ctx,1) are indistinguishable because U(C1, . . . , CN, y1, . . . , yL) = U(C′ 1, . . . , C′ N, y1, . . . , yL) for all inputs y = (y1, . . . , yL). Since the size of the universal circuit is quasi-linear in N, we get that the resulting iO’s evaluation time is bounded by T( eO(N)).
+
+7 Quasi-Linear Indistinguishable Obfuscator for Turing Machines
+
+\section{Quasi-Linear Indistinguishable Obfuscator for Turing Machines}
+7 Quasi-Linear Indistinguishable Obfuscator for Turing Machines
+
+7.1 Turing Machines with Succinct Proof of Equivalence
+
+\subsection{Turing Machines with Succinct Proof of Equivalence}
+7.1 Turing Machines with Succinct Proof of Equivalence
+
+Given a Turing Machine M that runs in time at most T(L) on length-L inputs, we can convert M to a circuit when fixing some input length L [PF79]. The resulting circuit is uniform in the sense that it can be generated by a uniform machine, and the circuit size is bounded by O(T(L) · log T(L)). Henceforth, we will use the notation JMKL to denote the circuit induced by M for input length L.
+
+Succinct proof of equivalence for TMs. Like Jain and Jin [JJ22], we construct an obfuscator for TMs that achieves indistinguishability for any two TMs with a proof of equivalence in the PV system. Specifically, we will need the following property that is implied by the existence of a PV proof.
+
+Definition 4 (TM family admits EF proof of equivalence). We say that two functionally equivalent Turing Machines M and M′ with running time T(·) admit an EF proof of equivalence of size Nproof(·), iff for every input length L, there is a succinct RAM machine Mprove(·) with description size at most poly(desc(M), λ) (here desc(M) denotes the description size of M) which, on receiving the input length L, outputs an EF proof of equivalence of length Nproof(L) between JMKL and JM′KL. We say that a family of Turing Machines admits EF proofs of equivalence of size at most Nproof(·), iff any two functionally equivalent TMs from the family admit an EF proof of equivalence of size Nproof(·).
+
+Definition 5 (iO for TMs with proof of equivalence). Let M be a family of TMs whose running time is polynomially bounded in the input length, and suppose that M admits EF proofs of equivalence with proof length polynomially bounded by the input length. A randomized algorithm TMObf(1λ, ·) is said to be a secure indistinguishability obfuscator for the Turing Machine family M, iff for any two functionally equivalent M, M′ ∈M, TMObf(1λ, M) ≈TMObf(1λ, M′). Further, for any M and λ, the obfuscated program TMObf(1λ, M) must be functionally equivalent to the original M.
+
+Fact 7.1. Let M and M′ be two Turing Machines whose description size is bounded by desc and whose running time is bounded by T(·). Suppose that M and M′ admit an EF proof of equivalence of length Nproof(·), then, there exists m which is polynomially bounded in desc and T, and a succinct RAM machine Mgen of size poly(desc(M), λ), such that on receiving the input length L and an index i ∈[m], Mgen(L, i) outputs a padded circuit Ci, such that the circuits C1, . . . , Cm satisfy the following properties:
+
+• C1 = Pad(JMKL, T·log T·poly(desc), Nproof(L)), and Cm = Pad(JMKL, T·log T·poly(desc), Nproof(L)).
+
+• Ci and Ci+1 are s-equivalent for i ∈[m −1], where s = O(log(T · log T · poly(desc) + Nproof(L))).
+
+Proof. By the definition of admitting EF proof of equivalence, we know that there exists some succinct RAM machine Mprove(·) efficiently generates an EF equivalence proof of size Nproof(L) for JMKL and JM′KL, therefore by Lemma 3.1, we know that Pad(JMKL, T ·log T ·poly(desc), Nproof(L)) and Pad(JMKL, T · log T · poly(desc), Nproof(L)) are transitively s-equivalent via some sequence C1, . . . , Cm for m = poly(desc, T). It remains to show that all the intermediate hybrid circuits Ci can be succinctly and uniformly generated by some RAM machine Mgen. Recall that each of the padded circuits and hybrid circuits consists of the following components: eC1(·), eC2(·), eCproof(·) and the AND circuit, where the detailed components of each phases can be found in Table 1. Note that given the circuits JMKL, JM′KL and EF equivalence proof, the RAM program Mgen can be designed to output each hybrid circuits on Table 1 in quasi-linear time eO(Tpoly(desc) + Nproof(L)) by calling the subroutine PadSingle(·, ·). However, Mgen should also support outputting a sequence of inner-hybrid circuits showing the transitively s-equivalence between the adjacent hybrid circuits on Table 1. Here we present two typical instances:
+
+• Initial circuit and grow C2. The only difference between these two hybrid circuits is that, eC2(1) is replaced by eC2(JM′KL). Recall that in order to prove the transitively s-equivalence, we iteratively switch all gates in eC2 to the right configuration. Mgen can just faithfully simulate this procedure: given an index i, Mgen first determines how many gates have been switched, then outputs circuit C1 = Pad(JMKL, T · log T · poly(desc), Nproof(L)) except that the first few gates of eC2(1) is reconfigured to corresponding ones of eC2(JM′KL).
+
+• Grow C2 and grow proof for C1 = C2. The only difference between these two hybrid circuits is that, eCproof(1) is replaced by eCproof([JMKL = JM′KL]). In the proof we split this step into two sub-steps: switch eCproof(1) to eCproof(C′ proof), where C′ proof is almost same as [JMKL = JM′KL] except that output gates constantly output 1; switch the output gates to the correct outputs. The first sub-step is analogous to the previous scheme ”Initial circuit and grow C2”, we focus on how Mgen can simulate the second sub-step. As we done in the proof, Mgen also gradually switch the output gates. Formally, given an index i, Mgen first determines how many output gates should be switched, then output a hybrid circuit where the first few output gates of eCproof correctly output values, and the rest of them constantly output 1.
+
+7.2 Building Blocks
+
+\subsection{Building Blocks}
+7.2 Building Blocks
+
+Preliminary: iO for RAM. We rely on the iO for RAM construction of Jain et al. [JLL23]. Although their iO for RAM construction suffers from polynomial in input-length cost for the evaluator, the evaluator’s running time has only quasi-linear dependence on T, the running time of the original RAM. More specifically, Jain et al. [JLL23] proved the following:
+
+Lemma 7.2 (iO for RAM). Assuming the existence of sub-exponentially secure iO for circuits and sub-exponentially secure one-way functions, there exists sub-exponentially secure iO for RAM (for bounded-length inputs), where the obfuscated program has size O(desc(M))+poly(λ), the evaluator’s runtime is eOλ(T) · poly(desc(M), L), and the obfuscator’s runtime is desc(M) · poly(λ, L) where desc(M) is the size of TM and L is the input length.
+
+Building blocks. We use following ingredients in our construction:
+
+\subsection{Construction}
+Building blocks. We use following ingredients in our construction:
+
+• Sub-exponentially secure puncturable pseudorandom functions kPRF and oPRF.
+
+• Sub-exponentially secure constant-overhead RAM indistinguishability obfuscator RAMObf.
+
+• Sub-exponentially secure quasi-linear locally indistinguishability obfuscator LiO for O(λ)-equivalent circuits. In particular, we will use the construction of Section 5.
+
+7.3 Construction
+
+Next, we present our indistinguishability obfuscator for TMs assuming proofs of equivalence.
+
+Obfuscation algorithm. The obfuscation algorithm first samples PRF keys kSK and oSK corresponding to kPRF and oPRF respectively. Then, it outputs
+
+] UObf ←RAMObf(1λ, UObf1λ,M,Nproof(·),T(·),kSK,oSK).
+
+In particular, UObfλ,M,Nproof(·),T(·),kSK,oSK(L) is the following machine which computes an obfuscated circuit for M given an input length L:
+
+UObfλ,M,Nproof(·),T(·),kSK,oSK(L)
+
+// Let s = c log(T · log T · poly(desc(M)) + Nproof(L)) for some universal constant c.
+
+• Let C = Pad(JMKL, T log T · poly(desc(M)), Nproof(L)).
+
+• Output an obfuscated circuit LiO(1λ, s, C) seeded with the PRF keys kSK and oSK. Specifically, kPRF(kSK, ·) is used to generate the random coins used for sampling keys in the construction of LiO, and oPRF(oSK, ·) is used to generate the random coins needed by the internal circuit obfuscator Obf called by LiO.
+
+In the above, we assume that the description of M comes with an a-priori bound on the maximum description length of the family of TMs we care about obfuscating. For convenience, we use desc(M) to denote this a-priori bound.
+
+Evaluation algorithm. We now describe the evaluation algorithm.
+
+Evaluation of an obfuscated TM ] UObf
+
+Given an input x ∈\{0, 1\}L:
+
+• Obtain the obfuscated program eC = ] UObf(L).
+
+• Output eC(x) using the evaluation algorithm described in Section 5.
+
+Efficiency. Since L ≤2λ the description length of L (i.e., input length of UObf) is bounded by λ. Further, due to the quasi-linear efficiency of the LiO scheme, the ] UObf(·) program runs in time eOλ(T · poly(desc(M)) + Nproof(L)). By Lemma 7.2, the obfuscated program size is O(desc(M)) + poly(λ), and runs in time eOλ(T · poly(desc(M)) + Nproof(L)). Moreover, the obfuscator’s runtime is desc(M) · poly(λ).
+
+7.4 Security Proofs
+
+\subsection{Security Proofs}
+7.4 Security Proofs
+
+Given two TMs M, M′ which admit a succinct EF proof of equivalence, we want to show that an obfuscation of M is indistinguishable from an obfuscation of M′. Specifically, we define the following experiments Real and Real′.
+
+Experiment Real. Output RAMObf(1λ, UObfλ,M,Nproof(·),T(·),kSK,oSK) where kSK and oSK are sampled at random.
+
+Experiment Real′. Output RAMObf(1λ, UObfλ,M′,Nproof(·),T(·),kSK,oSK) where kSK and oSK are sampled at random. We want to prove that Real is indistinguishable from Real′. We prove this via a sequence of hybrid experiments defined below.
+
+Hybrid Hybℓ. This hybrid is indexed by ℓ(upper bounded by 2λ). For L < ℓ, we obfuscate the UObfλ,M,Nproof(·),T(·),kSK,oSK program just like in Real; otherwise we obfuscate the UObfλ,M′,Nproof(·),T(·),kSK,oSK program like in Real′. Clearly Hyb0 ≡Real and Hyb2λ ≡Real′. We will use a sequence of intermediate hybrids to prove Hybℓ≈Hybℓ+1, which implies that Real ≈Real′. Let Mgen be the RAM that outputs the intermediate circuits C1, . . . , Cm given M and M′ (see Fact 7.1).
+
+Hybrid Hybi ℓ. In this hybrid UObf is modified to:
+
+Modified UObf(L)
+
+// Let s = c log(T · log T · poly(desc(M)) + Nproof(L))
+
+• If L < ℓ, return UObfλ,M,Nproof(·),T(·),kSK,oSK(L)
+
+• Else if L > ℓ, return UObfλ,M′,Nproof(·),T(·),kSK,oSK(L)
+
+• Otherwise, let Ci ←Mgen(L, i), and output an obfuscated circuit LiO(1λ, s, Ci) seeded with PRF keys kSK and oSK.
+
+Remark 7.3 (How LiO generates pseudorandom coins). In the above, we use the key kSK to seed the coins needed for sampling the keys needed by LiO, and use oSK to seed the coins needed for sampling the coins consumed by the inner obfuscator Obf called by LiO. In particular, recall that the LiO algorithm needs to sample the following keys:
+
+• global: somewhere extractable hash key hk;
+
+• global: FHE key pair (sk, pk) and trapdoor td′;
+
+• global: symmetric encryption keys \{K′ j\}j∈[s]; and
+
+• per-wire: for each wire w in the circuit: punturable PRF keys Km w , Kσ w.
+
+We may assume that each key can be uniquely identified by a name in the format of (w, type of key), where w = ⊥for a global key, and w refers to the wire identifier for a per-wire key; and the field “type of key” states which type of key. Each key can be generated using the template kPRF(kSK, name of key). Henceforth, let namesS denote the names of following keys: 1) all global keys; and 2) per-wire keys for wires attached to gates in S. Further, we may assume that when LiO obfuscates the Gateg
+
+circuit corresponding to gate g, it uses oPRF(oSK, g) to generate the random coins needed by the inner obfuscator Obf.
+
+We now continue with the proof. Since the modified UObf program of Hyb1 ℓis functionally equivalent to that of Hybℓ, and the modified UObf program of Hybk ℓ is functionally equivalent to that of Hybℓ+1, we have Hyb1 ℓ≈Hybℓand Hybk ℓ≈Hybℓ+1 by the security of RAMObf. Next, we will show that Hybi ℓ≈Hybi+1 ℓ which implies that Hybℓ≈Hybℓ+1.
+
+Hybrid Hybi,0 ℓ. Henceforth, let S be the subcircuit of size s where Ci and Ci+1 differ (but without affecting the functionality). The experiment Hybi,0 ℓ is almost identical to Hybi ℓexcept that we further modify the UObf program as follows:
+
+Modified UObf
+
+// Let s = c log(T · log T · poly(desc(M)) + Nproof(L))
+
+• If L < ℓ, return UObfλ,M,Nproof(·),T(·),kSK,oSK(L) ;
+
+• Else if L > ℓ, return UObfλ,M′,Nproof(·),T(·),kSK,oSK(L)
+
+• Otherwise,
+
+– Let Ci = Mgen(L, i).
+
+– Generate all keys as follows: each key identified by some name is generated by
+
+    
+
+   
+
+kPRF(kSK/\{namesS\} | \{z \} hard-wired
+
+, name), name /∈namesS;
+
+kPRF(kSK, name) | \{z \} hard-wired
+
+, otherwise.
+
+– For each gate g, generate the random coins needed by the internal obfuscator Obf as follows:     
+
+   
+
+oPRF(oSK/\{S\} | \{z \} hard-wired
+
+, g) g /∈S;
+
+oPRF(oSK, g) | \{z \} hard-wired
+
+otherwise.
+
+– Output LiO(1λ, s, Ci) except that we generate the coins needed by LiO as above.
+
+Due to the puncturing correctness of the punctured PRF, the modified UObf program of Hybi ℓ is functionally equivalent to that of Hybi,0 ℓ. Therefore, we have that Hybi ℓ≈Hybi,0 ℓ from the security of RAMObf.
+
+Hybrid Hybi,1 ℓ. Hybi,1 ℓ is almost the same as Hybi,0 ℓ, except that in the case of L = ℓ, all keys related to gates in S are hard-wired random values (sampled honestly using the relevant key generation algorithms):
+
+Modified UObf
+
+// Let s = c log(T · log T · poly(desc(M)) + Nproof(L))
+
+• If L < ℓ, return UObfλ,M,Nproof(·),T(·),kSK,oSK(L) ;
+
+• Else if L > ℓ, return UObfλ,M′,Nproof(·),T(·),kSK,oSK(L)
+
+• Otherwise,
+
+– Let Ci = Mgen(L, i).
+
+– Generate all keys as follows: each key identified by some name is generated by   
+
+ 
+
+kPRF(kSK/\{namesS\} | \{z \} hard-wired
+
+, name), name /∈namesS;
+
+hard-wired random value, otherwise.
+
+– For each gate g, generate the random coins needed by the internal obfuscator Obf as follows:   
+
+ 
+
+oPRF(oSK/\{S\} | \{z \} hard-wired
+
+, g) g /∈S;
+
+hard-wired random coins, otherwise.
+
+– Output LiO(1λ, s, Ci) except that we generate the coins needed by LiO as above.
+
+Observe that the original PRF keys kSK and oSK are never used. Therefore, due to the security of the puncturable PRF, Hybi,1 ℓ and Hybi,0 ℓ are computationally indistinguishable.
+
+Hybrid Hybi,2 ℓ. Hybi,2 ℓ is otherwise the same as Hybi,1 ℓ, except that we modify the UObf program such that for the case L = ℓ, we precompute the obfuscated g Gate g gates for all g ∈S, hardwire these results inside UObf. Now, for each gate g /∈S, UObf computes the obfuscated g Gate g just like in Hybi,1 ℓ, and for each gate g ∈S, it simply outputs the precomputed outcome. Since this modification does not change the functionality of UObf, due to the security of RAMObf, Hybi,2 ℓ is computationally indistinguishable from Hybi,1 ℓ.
+
+Hybrid Hybi,3 ℓ. Hybi,3 ℓ is otherwise identical as Hybi,2 ℓ, except that for the case L = ℓ, instead of obfuscating Ci, the modified UObf program now obfuscates Ci+1 instead. In both Hybi,2 ℓ and Hybi,3 ℓ, the obfuscated gates for the subcircuit S are hard-wired in UObf, and they are for Ci and Ci+1 respectively in the two experiments. For any gate not in S, the corresponding obfuscated gates output by LiO are identically distributed in the two experiments. Therefore, to argue the computational indistinguishability of Hybi,2 ℓ and Hybi,3 ℓ, it suffices to argue that the obfuscated gates belonging to S are computationally indistinguishable in the two experiments. This can be shown using the same proof as that of Lemma 5.1. In particular, it is easy to check that the proof of Lemma 5.1 would still hold as long as the coins associated with S are chosen randomly, including the coins for generating the keys for coins in nameS, and the coins for the inner Obf for gates in S. Now, using a symmetric reverse sequence of hybrids, we can argue that Hybi,3 ℓ ≈Hybℓ+1. This is sufficient for arguing that Hybℓ≈Hybℓ+1. In summary, there are only polynomially many hybrid experiments that go from Real to Real′, so if the underlying primitives kPRF, oPRF, RAMObf, and LiO enjoy subexponential security, then the distinguishing probability of Real and Real′ is also subexponentially small. In conclusion, we have the following theorem.
+
+Theorem 7.4 (Sub-exponentially secure indistinguishability obfuscation for TMs with succinct proof of equivalence). Assume the following hard problems:
+
+• sub-exponential hardness of the LWE assumption,
+
+• sub-exponentially secure one-way functions, and
+
+• sub-exponentially secure indistinguishability obfuscation for circuits.
+
+Let T(·) and Nproof(·) be polynomially bounded functions. Let M be a family of TMs with description size at most desc, running time at most T(L) on length-L inputs, and suppose that M admits EF proofs of equivalence with proof length at most Nproof(L) on length-L inputs. Then, for any ϵ > 0, there exists a 2λϵ- sub-exponential secure indistinguishability obfuscator for M, such that the obfuscator and evaluator’s running times are upper bounded by eOλ(T(L) · poly(desc) + Nproof(L)) on length-L inputs, and the size of obfuscated program is bounded by poly(desc, λ).
+
+Acknowledgments
+
+This work is in part supported by NSF awards 2128519 and 2044679, an ONR grant, and a DARPA SIEVE grant under a subcontract from SRI.
+
+References
+
+[AJ15] Prabhanjan Ananth and Abhishek Jain. Indistinguishability obfuscation from compact functional encryption. In CRYPTO, 2015.
+
+[AJS17] Prabhanjan Ananth, Abhishek Jain, and Amit Sahai. Indistinguishability obfuscation for turing machines: Constant overhead and amortization. In CRYPTO, 2017.
+
+[BBK+23] Zvika Brakerski, Maya Farber Brodsky, Yael Tauman Kalai, Alex Lombardi, and Omer Paneth. SNARGs for monotone policy batch NP. In CRYPTO, 2023.
+
+[BCG+18] Nir Bitansky, Ran Canetti, Sanjam Garg, Justin Holmgren, Abhishek Jain, Huijia Lin, Rafael Pass, Sidharth Telang, and Vinod Vaikuntanathan. Indistinguishability obfuscation for ram programs and succinct randomized encodings. SIAM Journal on Computing, 2018.
+
+[BCP15] Elette Boyle, Kai-Min Chung, and Rafael Pass. Oblivious parallel ram. In TCC, 2015.
+
+[BFK+19] Saikrishna Badrinarayanan, Rex Fernando, Venkata Koppula, Amit Sahai, and Brent Waters. Output compression, mpc, and io for turing machines. In ASIACRYPT, 2019.
+
+[BS80] Jon Louis Bentley and James B Saxe. Decomposable searching problems i. static-todynamic transformation. Journal of Algorithms, 1(4):301–358, 1980.
+
+[BW13] Dan Boneh and Brent Waters. Constrained pseudorandom functions and their applications. In ASIACRYPT, 2013.
+
+[CLTV15] Ran Canetti, Huijia Lin, Stefano Tessaro, and Vinod Vaikuntanathan. Obfuscation of probabilistic circuits and applications. In Theory of Cryptography, pages 468–497, 2015.
+
+[CW14] Jie Chen and Hoeteck Wee. Semi-adaptive attribute-based encryption and improved delegation for boolean formula. In SCN, 2014.
+
+[FSS+23] Rex Fernando, Elaine Shi, Pratik Soni, Nikhil Vanjani, and Brent Waters. Noninteractive anonymous router with quasi-linear router computation. In TCC, 2023.
+
+[FWW23] Cody Freitag, Brent Waters, and David J. Wu. How to use (plain) witness encryption: Registered abe, flexible broadcast, and more. In CRYPTO, 2023.
+
+[Gen09] Craig Gentry. Fully homomorphic encryption using ideal lattices. In STOC, 2009.
+
+[GGG+14] Shafi Goldwasser, S. Dov Gordon, Vipul Goyal, Abhishek Jain, Jonathan Katz, FengHao Liu, Amit Sahai, Elaine Shi, and Hong-Sheng Zhou. Multi-input functional encryption. In Eurocrypt, 2014.
+
+[GGH+13] Sanjam Garg, Craig Gentry, Shai Halevi, Mariana Raykova, Amit Sahai, and Brent Waters. Candidate indistinguishability obfuscation and functional encryption for all circuits. In FOCS, 2013.
+
+[GGM86] Oded Goldreich, Shafi Goldwasser, and Silvio Micali. How to construct random functions. J. ACM, 1986.
+
+[GJO16] Vipul Goyal, Aayush Jain, and Adam O’Neill. Multi-input functional encryption with unbounded-message security. In ASIACRYPT, 2016.
+
+[GKW16] Rishab Goyal, Venkata Koppula, and Brent Waters. Semi-adaptive security and bundling functionalities made generic and easy. In TCC, 2016.
+
+[HILL99] Johan H˚Astad, Russell Impagliazzo, Leonid A. Levin, and Michael Luby. A pseudorandom generator from any one-way function. SIAM Journal on Computing, 1999.
+
+[HW15] Pavel Hubacek and Daniel Wichs. On the communication complexity of secure function evaluation with long output. In ITCS, 2015.
+
+[JJ22] A. Jain and Z. Jin. Indistinguishability obfuscation via mathematical proofs of equivalence. In 2022 IEEE 63rd Annual Symposium on Foundations of Computer Science (FOCS), pages 1023–1034, nov 2022.
+
+[JLL23] Aayush Jain, Huijia Lin, and Ji Luo. On the optimal succinctness and efficiency of functional encryption and attribute-based encryption. In Advances in Cryptology EUROCRYPT 2023 - 42nd Annual International Conference on the Theory and Applications of Cryptographic Techniques, Lyon, France, April 23-27, 2023, Proceedings, Part III, volume 14006 of Lecture Notes in Computer Science, pages 479–510. Springer, 2023.
+
+[JLS21] Aayush Jain, Huijia Lin, and Amit Sahai. Indistinguishability obfuscation from wellfounded assumptions. In STOC, 2021.
+
+[KLW15] Venkata Koppula, Allison Bishop Lewko, and Brent Waters. Indistinguishability obfuscation for turing machines with unbounded memory. In Proceedings of the Forty-Seventh Annual ACM Symposium on Theory of Computing, STOC ’15, page 419–428, 2015.
+
+[PF79] Nicholas Pippenger and Michael J. Fischer. Relations among complexity measures. J. ACM, 26(2):361–381, April 1979.
+
+[Reg05] Oded Regev. On lattices, learning with errors, random linear codes, and cryptography. In Proceedings of the 37th Annual ACM Symposium on Theory of Computing, Baltimore, MD, USA, May 22-24, 2005, pages 84–93. ACM, 2005.
+
+[SW14] Amit Sahai and Brent Waters. How to use indistinguishability obfuscation: deniable encryption, and more. In Proceedings of the Forty-Sixth Annual ACM Symposium on Theory of Computing, STOC ’14, page 475–484, New York, NY, USA, 2014. Association for Computing Machinery.
+
+[Val76] Leslie G. Valiant. Universal circuits (preliminary report). In Proceedings of the 8th Annual ACM Symposium on Theory of Computing, May 3-5, 1976, Hershey, Pennsylvania, USA, pages 196–203. ACM, 1976.
+
+[WW22] Brent Waters and David J. Wu. Batch arguments for np and more from standard bilinear group assumptions. In Advances in Cryptology – CRYPTO 2022: 42nd Annual International Cryptology Conference, CRYPTO 2022, Santa Barbara, CA, USA, August 15–18, 2022, Proceedings, Part II, page 433–463, 2022.
+
+A Additional Preliminaries
+
+\section{Additional Preliminaries}
+A Additional Preliminaries
+
+In this section, we review the notation and definition of some cryptographic primitives used in this work. We use the notation x \$←−D denotes uniformly sampling a value x from distribution D. Similarly, for a (possibly randomized) algorithm A, y ←A(x) denotes algorithm A outputs y on input x. Sometimes we write y ←A(x; r) to specify the random coins r used in A on input x. In this paper, we use λ denotes the overall security parameter, and for some specific primitive P, we may denote λP as the security parameter of P, it is always the case that λP = poly(λ). We slightly abuse statement “PPT adversary” to cover non-uniform probabilistic polynomial-time adversary (i.e. family of polynomial-time probabilistic circuits). A positive function ϵ(λ) is said to be negligible in λ if for any c > 0, there exists λc where ϵ(λ) < n−c whenever λ > λc. Moreover, negl(λ) denotes some (unspecified) negligible function in λ.
+
+A.1 Pseudorandom Generators
+
+\subsection{Pseudorandom Generators}
+A.1 Pseudorandom Generators
+
+A pseudorandom generator (PRG) stretches some truly random inputs to a longer sequence which is computationally indistinguishable to uniformly random string.
+
+Definition 6. For an given function PRG : \{0, 1\}l →\{0, 1\}n where l < n is polynomially bounded in λ and any PPT adversary A, define the advantage of A as
+
+AdvA
+
+PRG(λ)
+
+= Pr[seed \$←−\{0, 1\}l, r ←PRG(seed) : A(r) = 1] −Pr[r \$←−\{0, 1\}n : A(r) = 1] ,
+
+then PRG is said to be a polynomially secure pseudorandom generator if AdvA
+
+PRG(λ) is bounded by some negligible function negl(λ), and is 2−λϵ sub-exponentially secure if AdvA
+
+PRG(λ) ≤2λϵnegl(λ).
+
+It is known that polynomially (or sub-exponentially resp.) secure PRG exists if and only if polynomially (or sub-exponentially resp.) secure one-way functions exists [HILL99].
+
+A.2 Puncturable Pseudorandom Functions
+
+\subsection{Puncturable Pseudorandom Functions}
+A.2 Puncturable Pseudorandom Functions
+
+We formally define the notion of puncturable pseudorandom functions (puncturable PRF). In this work, we restrict the power of puncturable PRF to only support puncturing at one point.
+
+Definition 7. A puncturable PRF family consists of deterministic polynomial time algorithms both take as PRF key K and input x: evaluation algorithm PRF(K, x) outputs the evaluation at given point x, and puncturing algorithm K\{x\} = PRFpunc(K, x) outputs a punctured PRF key. It satisfies following properties:
+
+• Correctness. For any PRF key K and input x, the punctured PRF key preserves the functionality except at point x, that is, for all x′ ̸= x,
+
+PRF(K, x′) = PRF(K\{x\}, x′).
+
+• Pseudorandomness. The punctured PRF key doesn’t leak nontrivial information of PRF(K, x). Formally, for each PPT adversary A = (A1, A2) such that A1(1λ) outputs an input x and private state st, define the advantage of A as:
+
+AdvA
+
+PRF(λ)
+
+= Pr[A2(st, K/\{x\}, x, PRF(K, x)) = 1] −Pr[r \$←−Uλ : A(st, K\{x\}, x, r) = 1] ,
+
+where Uλ is the range of PRF. We say the puncturable PRF is polynomially (or 2λϵ subexponentially resp.) secure if AdvA
+
+PRF(λ) ≤negl(λ) (or 2−λϵnegl(λ) resp.).
+
+As observed by [BW13], the GGM-style PRFs from PRG [GGM86] (and thus, from one-way functions) yields punturable PRFs, moreover, the obtained punturable PRF is polynomially (or sub-exponentially resp.) secure if and only if the PRG building block shares same level of security. We also observe that for any given K, x, the correctness of puncturable PRF key K/\{x\} can be proved succinctly in EF system, which is useful for our later construction:
+
+Lemma A.1 ( [JJ22]). For puncturable PRF scheme PRF : \{0, 1\}λ × \{0, 1\}n →\{0, 1\}m, the correctness of puncturing at point x has a poly(λ, n, m)-size EF proof:
+
+(x′ ̸= x) →(PRF(K, x′) = PRF(K\{x\}, x′)).
+
+A.3 Public Key Encryption
+
+\subsection{Public Key Encryption}
+A.3 Public Key Encryption
+
+Here we review the notion of public key encryption.
+
+Definition 8. A public key encryption (PKE) scheme consists of following PPT algorithms (Gen,Enc,Dec):
+
+• Gen(1λ): On input a security parameter λ, the key generation algorithm outputs randomly generated public key pk and secret key sk.
+
+• Enc(pk, m): On input a public key pk and a message m ∈\{0, 1\}n, the encryption algorithm outputs a ciphertext ct ∈\{0, 1\}l of m.
+
+• Dec(sk, ct): Given secret key sk and a ciphertext ct, the decryption algorithm decodes ct and outputs a plaintext message m.
+
+It satisfies the following properties:
+
+• Correctness. For any message m ∈\{0, 1\}n, we have
+
+Pr h (pk, sk) ←Gen(1λ), ct ←Enc(pk, m) : Dec(sk, ct) = m i = 1.
+
+Hence, without loss of generality we may assume Dec is a deterministic algorithm.
+
+• CPA Security. For any PPT adversary A = (A1, A2), denote the advantage of A in CPA game as:
+
+AdvA PKE(λ)
+
+=
+
+Pr
+
+
+
+
+
+(pk, sk) ←Gen(1λ),
+
+(m0, m1, st) ←A1(1λ, pk)
+
+b \$←−\{0, 1\}
+
+ctb ←Enc(pk, mb)
+
+: A2(st, ctb) = b
+
+
+
+ −1
+
+2
+
+We say the PKE scheme is polynomially (or 2λϵ sub-exponentially) IND-CPA secure if the advantage AdvA PKE(λ) ≤negl(λ) (or 2−λϵnegl(λ) resp.).
+
+A IND-CPA secure PKE scheme can be built from various assumptions, including DDH, QR, RSA, LWE and even indistinguishability obfuscation with one-way functions. In this work we choose the LWE-based instantiation, i.e. Regev’s PKE scheme [Reg05] as candidate, not only for minimizing assumptions, but also because we can easily obtain a succinct correctness proof in EF system:
+
+Lemma A.2 ( [JJ22]). Regev’s PKE scheme [Reg05] has a poly(λ, n, l)-size EF proof of correctness:
+
+((pk, sk) = Gen(1λ; r1)) →(Dec(sk, Enc(pk, m; r2)) = m).
+
+A.4 Non-Interactive Bit Commitment
+
+\subsection{Non-Interactive Bit Commitment}
+A.4 Non-Interactive Bit Commitment
+
+We also review the definition of perfectly binding non-interactive bit commitment scheme.
+
+Definition 9. A perfectly binding non-interactive bit commitment scheme consists of PPT algorithms (Setup, Commit):
+
+• Setup(1λ): On input a security parameter λ, the setup algorithm outputs common reference string CRS.
+
+• Commit(CRS, b): On input CRS and a bit b ∈\{0, 1\}, the commitment generation algorithm outputs a commitment com.
+
+The scheme should satisfy following properties:
+
+• Perfect Binding. For any randomness r, r′, we have
+
+Pr[CRS ←Setup(1λ) : Commit(CRS, 0; r) = Commit(CRS, 1; r′)] = 0
+
+• Computationally Hiding. For all PPT adversary A, denote the advantage of A in CPA game as:
+
+AdvA COM(λ)
+
+=
+
+Pr
+
+
+
+
+
+CRS ←Setup(1λ),
+
+b R ←−\{0, 1\}
+
+com∗←Commit(CRS, b)
+
+: A(CRS, com∗) = b
+
+
+
+−1
+
+2
+
+The bit commitment scheme is polynomial (or 2λϵ sub-exponential resp.) hiding if AdvA COM(λ) ≤ negl(λ) (or 2−λϵnegl(λ) resp.).
+
+A perfectly binding non-interactive bit commitment scheme can be trivially implemented by a PKE scheme:
+
+• Setup(1λ): Output PKE.Gen(1λ).
+
+• Commit(CRS, b): Output PKE.Enc(CRS, b).
+
+Notice that the bit commitment scheme shares same level of security as underlying PKE. Specifically, if we instantiate the PKE by Regev’s construction with sub-exponential security, then the commitment scheme is sub-exponential hiding and has a polynomial-size binding proof by Lemma A.2.
+
+A.5 Fully Homomorphic Encryption
+
+\subsection{Fully Homomorphic Encryption}
+A.5 Fully Homomorphic Encryption
+
+A fully homomorphic encryption (FHE) scheme is a generalized version of PKE, where additionally support homomorphic evaluation.
+
+Definition 10. A FHE scheme for a function family F consists of following PPT algorithms:
+
+• Gen(1λ): On input a security parameter λ, the key generation algorithm randomly generates public key pk and secret key sk.
+
+• Enc(pk, m): On input a public key pk and a message m, the encryption algorithm outputs ciphertext ct of m.
+
+• Eval(pk, ct, f): On input a public key pk, a ciphertext ct and a function f ∈F, the evaluation algorithm outputs a ciphertext ctf.
+
+• Dec(sk, ct): Given secret key sk and ciphertext ct, the decryption algorithm decrypts ct and output a plaintext m.
+
+We require the FHE scheme to satisfy following properties:
+
+• Succinctness. The output length of evaluated ciphertext Eval(pk, ct, f) should not depend on descryption of function f. Formally, there exists some LFHE = poly(λ) such that FHE scheme stretches a single bit of plaintext to LFHE bits ciphertext, thus, the output length of Eval algorithm is exactly |f(m)|LFHE if input ct is ciphertext of m.
+
+• Correctness. For any message m ∈\{0, 1\}n and function f ∈F with input length n, we have
+
+Pr
+
+
+
+
+
+(pk, sk) ←Gen(1λ),
+
+ct ←Enc(pk, m),
+
+ctf ←Eval(pk, ct, f)
+
+: Dec(sk, ctf) = f(m)
+
+
+
+= 1.
+
+• CPA Security. The CPA game is define in the same standard way as public key encryption. For all adversary A, denote the advantage of A in CPA game as AdvA FHE(λ), we say the FHE scheme is polynomially (or 2λϵ sub-exponentially resp.) IND-CPA secure if AdvA FHE(λ) ≤negl(λ) (or 2−λϵnegl(λ) resp.).
+
+It is known that polynomially (or sub-exponentially resp.) secure FHE scheme exists assuming polynomial (or sub-exponential resp.) hardness of LWE assumption [Gen09].
+
+A.6 Indistinguishability Obfuscation
+
+\subsection{Indistinguishability Obfuscation}
+A.6 Indistinguishability Obfuscation
+
+We formally define the notion of indistinguishability obfuscation (iO) for circuits:
+
+Definition 11. An indistinguishability obfuscator iO for circuit family C takes a circuit C ∈C as input, and outputs an obfuscated circuit. It should satisfy the following:
+
+• Completeness. For any C ∈C and any input x of C, it holds that
+
+Pr h eC ←iO(1λ, C) : C(x) = eC(x) i = 1.
+
+• Indistinguishability. For any PPT adversary A, denote the advantage of A in distinguishing functionally equivalent circuits C0, C1 ∈C where C0(x) = C1(x) for all input x as:
+
+AdvA
+
+iO,C0,C1(λ)
+
+= Pr[A(iO(1λ, C0)) = 1] −Pr[A(iO(1λ, C1)) = 1] ,
+
+then we say the iO scheme is polynomially (or 2λϵ sub-exponentially resp.) secure if there exists some negligible function ϵA(λ) such that AdviO,C0,C1(λ) ≤ϵA(λ) (or 2−λϵϵA(λ) resp.) for any functionally equivalent circuits C0, C1 ∈C.
+
+\end{document}

@@ -1,0 +1,6 @@
+# Test inputs for minimal honeypot
+# seed = [1, 2, 3, 4] -> hash = 1*1 + 2*2 + 3*3 + 4*4 = 30
+
+seed_hash = "30"
+output_valid = "1"
+seed = ["1", "2", "3", "4"]

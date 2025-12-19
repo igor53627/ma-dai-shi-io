@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma-Dai-Shi Honeypot</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --border: #2a2a3a;
+            --text: #e0e0e0;
+            --accent: #6366f1;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .card h2 {
+            font-size: 0.875rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+        
+        .prize {
+            font-size: 2rem;
+            color: var(--success);
+            font-weight: bold;
+        }
+        
+        .hash {
+            font-size: 0.75rem;
+            color: #666;
+            word-break: break-all;
+            margin-top: 0.5rem;
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+        
+        input, textarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.75rem;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            font-family: inherit;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-success { background: var(--success); }
+        .btn-secondary { background: var(--border); }
+        
+        .status {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .status.loading { background: #1e1e2e; color: #888; }
+        .status.success { background: #052e16; color: var(--success); }
+        .status.error { background: #2e0505; color: var(--error); }
+        
+        .progress {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+        
+        .log {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            color: #666;
+        }
+        
+        .log-entry { margin-bottom: 0.25rem; }
+        .log-entry.success { color: var(--success); }
+        .log-entry.error { color: var(--error); }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        
+        .code-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tab {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            color: #888;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        
+        .tab:hover { border-color: var(--accent); }
+        .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+        
+        .code-editor {
+            background: #0d0d12;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: auto;
+            max-height: 400px;
+        }
+        
+        .code-editor pre {
+            margin: 0;
+            padding: 1rem;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: #a0a0b0;
+        }
+        
+        .code-editor code {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+        
+        .code-editor .keyword { color: #c792ea; }
+        .code-editor .type { color: #ffcb6b; }
+        .code-editor .number { color: #f78c6c; }
+        .code-editor .string { color: #c3e88d; }
+        .code-editor .comment { color: #546e7a; }
+        .code-editor .property { color: #82aaff; }
+        
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ma-Dai-Shi Honeypot</h1>
+        <p class="subtitle">Find the seed phrase hidden by quasi-linear iO | <a href="protocol.html" style="color: var(--accent);">View Protocol</a></p>
+        
+        <!-- Honeypot Info -->
+        <div class="card">
+            <h2>Active Honeypot</h2>
+            <div class="prize" id="prize">Loading...</div>
+            <div class="hash" id="progHash">Program hash: ...</div>
+            <div class="hash" id="contract">Contract: ...</div>
+            <button class="btn-secondary" style="margin-top: 1rem;" onclick="toggleCode()">
+                View Obfuscated Program
+            </button>
+        </div>
+        
+        <!-- Obfuscated Program Code -->
+        <div class="card" id="codeCard" style="display: none;">
+            <h2>Obfuscated Program (Ma-Dai-Shi iO)</h2>
+            <div class="code-tabs">
+                <button class="tab active" onclick="showTab('json')">JSON</button>
+                <button class="tab" onclick="showTab('rust')">Rust Struct</button>
+                <button class="tab" onclick="showTab('matrices')">Matrices</button>
+            </div>
+            <div class="code-editor">
+                <pre id="codeContent"><code>Loading...</code></pre>
+            </div>
+            <div style="margin-top: 0.5rem; font-size: 0.7rem; color: #666;">
+                <span id="codeStats">128 BP steps | 5x5 matrices | Field: GF(251)</span>
+            </div>
+        </div>
+        
+        <!-- Try Seed -->
+        <div class="card">
+            <h2>Try a Seed Phrase</h2>
+            <div class="input-group">
+                <label>Enter 12 BIP-39 words (space-separated)</label>
+                <textarea id="seedInput" placeholder="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"></textarea>
+            </div>
+            <button id="tryBtn" onclick="trySeed()">Evaluate</button>
+            <button class="btn-secondary" onclick="randomSeed()">Random</button>
+            
+            <div id="tryStatus" class="status" style="display: none;"></div>
+        </div>
+        
+        <!-- Batch Mode -->
+        <div class="card">
+            <h2>Batch Brute Force</h2>
+            <p style="color: #666; font-size: 0.75rem; margin-bottom: 1rem;">
+                Warning: 2^128 entropy = infeasible. This is for demonstration only.
+            </p>
+            <div class="grid">
+                <div class="input-group">
+                    <label>Batch Size</label>
+                    <input type="number" id="batchSize" value="1000">
+                </div>
+                <div class="input-group">
+                    <label>Starting Index</label>
+                    <input type="number" id="startIndex" value="0">
+                </div>
+            </div>
+            <button id="batchBtn" onclick="startBatch()">Start Batch</button>
+            <button class="btn-secondary" onclick="stopBatch()">Stop</button>
+            
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+            
+            <div id="batchStats" style="margin-top: 1rem; font-size: 0.75rem; color: #666;">
+                Attempts: <span id="attempts">0</span> | 
+                Speed: <span id="speed">0</span>/sec |
+                ETA: <span id="eta">∞</span>
+            </div>
+        </div>
+        
+        <!-- Claim Prize -->
+        <div class="card" id="claimCard" style="display: none;">
+            <h2>Claim Prize</h2>
+            <div class="status success">
+                [OK] Valid seed phrase found!
+            </div>
+            <p style="margin: 1rem 0; font-size: 0.875rem;">
+                Generating zkSNARK proof... this may take a few minutes.
+            </p>
+            <button class="btn-success" id="claimBtn" onclick="claimPrize()">
+                Generate Proof & Claim
+            </button>
+        </div>
+        
+        <!-- Log -->
+        <div class="card">
+            <h2>Log</h2>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Import WASM module
+        import init, { evaluate_seed, batch_evaluate, generate_witness } from './pkg/honeypot_wasm.js';
+        
+        let wasmReady = false;
+        let obfProg = null;
+        let batchRunning = false;
+        let foundSeed = null;
+        let bip39Wordlist = [];
+        let wordToIndex = new Map();
+        
+        // Initialize
+        async function initialize() {
+            log('Loading BIP-39 wordlist...');
+            await loadWordlist();
+            
+            log('Initializing WASM module...');
+            await init();
+            wasmReady = true;
+            log('WASM ready', 'success');
+            
+            // Load honeypot info from contract (mock for demo)
+            await loadHoneypotInfo();
+        }
+        
+        async function loadWordlist() {
+            const resp = await fetch('./data/bip39-english.txt');
+            const text = await resp.text();
+            bip39Wordlist = text.trim().split('\n').map(w => w.trim().toLowerCase());
+            
+            if (bip39Wordlist.length !== 2048) {
+                log(`[WARN] Wordlist has ${bip39Wordlist.length} words, expected 2048`, 'error');
+            }
+            
+            bip39Wordlist.forEach((word, idx) => wordToIndex.set(word, idx));
+            log(`Loaded ${bip39Wordlist.length} BIP-39 words`);
+        }
+        
+        async function loadHoneypotInfo() {
+            // In production, fetch from Ethereum
+            document.getElementById('prize').textContent = '1.337 ETH';
+            document.getElementById('progHash').textContent = 
+                'Program hash: 0x7a3b...f92e (Ma-Dai-Shi ObfProg)';
+            document.getElementById('contract').textContent = 
+                'Contract: 0x1234...5678 (Sepolia)';
+            
+            // Load obfuscated program from IPFS/server
+            // obfProg = await fetch('/api/obfprog').then(r => r.json());
+            obfProg = generateMockObfProg(); // Demo only
+            
+            log('Loaded honeypot info');
+        }
+        
+        // Generate mock ObfProg for demo
+        function generateMockObfProg() {
+            const matrices = [];
+            for (let i = 0; i < 128; i++) {
+                const m = [];
+                for (let r = 0; r < 5; r++) {
+                    const row = [];
+                    for (let c = 0; c < 5; c++) {
+                        row.push(r === c ? 1 : 0);
+                    }
+                    m.push(row);
+                }
+                matrices.push(m);
+            }
+            return {
+                hash: new Array(32).fill(0),
+                bp_matrices: matrices,
+                input_bits: 128
+            };
+        }
+        
+        // Try single seed
+        window.trySeed = async function() {
+            if (!wasmReady) {
+                log('WASM not ready', 'error');
+                return;
+            }
+            
+            const input = document.getElementById('seedInput').value.trim();
+            const words = input.split(/\s+/);
+            
+            if (words.length !== 12) {
+                showStatus('tryStatus', 'error', 'Need exactly 12 words');
+                return;
+            }
+            
+            // Convert words to BIP-39 indices
+            const indices = [];
+            for (const word of words) {
+                const idx = wordToIndex.get(word.toLowerCase());
+                if (idx === undefined) {
+                    showStatus('tryStatus', 'error', `Unknown word: "${word}"`);
+                    return;
+                }
+                indices.push(idx);
+            }
+            
+            log(`Evaluating: ${words.slice(0, 3).join(' ')}...`);
+            showStatus('tryStatus', 'loading', 'Evaluating...');
+            
+            try {
+                const result = await evaluate_seed(obfProg, indices);
+                
+                if (result.is_valid) {
+                    showStatus('tryStatus', 'success', 
+                        `[OK] VALID SEED FOUND! (${result.time_ms.toFixed(1)}ms)`);
+                    log('FOUND VALID SEED!', 'success');
+                    foundSeed = indices;
+                    document.getElementById('claimCard').style.display = 'block';
+                } else {
+                    showStatus('tryStatus', 'error', 
+                        `Invalid (output=${result.output}, ${result.time_ms.toFixed(1)}ms)`);
+                }
+            } catch (e) {
+                showStatus('tryStatus', 'error', `Error: ${e}`);
+                log(`Error: ${e}`, 'error');
+            }
+        };
+        
+        // Random seed
+        window.randomSeed = function() {
+            if (bip39Wordlist.length === 0) {
+                log('Wordlist not loaded yet', 'error');
+                return;
+            }
+            const words = [];
+            for (let i = 0; i < 12; i++) {
+                words.push(bip39Wordlist[Math.floor(Math.random() * bip39Wordlist.length)]);
+            }
+            document.getElementById('seedInput').value = words.join(' ');
+        };
+        
+        // Batch brute force
+        window.startBatch = async function() {
+            if (!wasmReady || batchRunning) return;
+            
+            batchRunning = true;
+            const batchSize = parseInt(document.getElementById('batchSize').value);
+            let index = parseInt(document.getElementById('startIndex').value);
+            let attempts = 0;
+            const startTime = Date.now();
+            
+            log(`Starting batch from index ${index}`);
+            
+            while (batchRunning) {
+                // Generate batch of seeds
+                const seeds = [];
+                for (let i = 0; i < batchSize; i++) {
+                    seeds.push(indexToSeed(index + i));
+                }
+                
+                try {
+                    const results = await batch_evaluate(obfProg, seeds);
+                    
+                    if (results.length > 0) {
+                        const [foundIdx, _] = results[0];
+                        foundSeed = seeds[foundIdx];
+                        log(`FOUND at index ${index + foundIdx}!`, 'success');
+                        document.getElementById('claimCard').style.display = 'block';
+                        batchRunning = false;
+                        break;
+                    }
+                } catch (e) {
+                    log(`Batch error: ${e}`, 'error');
+                }
+                
+                index += batchSize;
+                attempts += batchSize;
+                
+                // Update stats
+                const elapsed = (Date.now() - startTime) / 1000;
+                const speed = Math.round(attempts / elapsed);
+                document.getElementById('attempts').textContent = attempts.toLocaleString();
+                document.getElementById('speed').textContent = speed.toLocaleString();
+                
+                // Progress (meaningless for 2^128 but looks nice)
+                const progress = Math.min(100, (attempts / 1000000) * 100);
+                document.getElementById('progressBar').style.width = `${progress}%`;
+                
+                // Yield to UI
+                await new Promise(r => setTimeout(r, 0));
+            }
+        };
+        
+        window.stopBatch = function() {
+            batchRunning = false;
+            log('Batch stopped');
+        };
+        
+        // Claim prize
+        window.claimPrize = async function() {
+            if (!foundSeed) return;
+            
+            log('Generating zkSNARK proof...');
+            document.getElementById('claimBtn').disabled = true;
+            
+            try {
+                // Generate witness
+                const witness = await generate_witness(obfProg, foundSeed);
+                log('Witness generated');
+                
+                // Call Noir prover (would use bb.js in production)
+                // const proof = await noirProver.prove(witness);
+                
+                // Submit to contract
+                // await contract.claim(proof);
+                
+                log('Proof generated - connect wallet to claim!', 'success');
+            } catch (e) {
+                log(`Proof generation failed: ${e}`, 'error');
+            }
+            
+            document.getElementById('claimBtn').disabled = false;
+        };
+        
+        // Code viewer
+        let currentTab = 'json';
+        
+        window.toggleCode = function() {
+            const card = document.getElementById('codeCard');
+            card.style.display = card.style.display === 'none' ? 'block' : 'none';
+            if (card.style.display === 'block') {
+                updateCodeView();
+            }
+        };
+        
+        window.showTab = function(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            updateCodeView();
+        };
+        
+        function updateCodeView() {
+            if (!obfProg) return;
+            
+            const el = document.getElementById('codeContent');
+            let code = '';
+            
+            if (currentTab === 'json') {
+                code = formatJson(obfProg);
+            } else if (currentTab === 'rust') {
+                code = formatRust(obfProg);
+            } else if (currentTab === 'matrices') {
+                code = formatMatrices(obfProg);
+            }
+            
+            el.innerHTML = `<code>${code}</code>`;
+            
+            const stats = `${obfProg.bp_matrices.length} BP steps | 5x5 matrices | Field: GF(251)`;
+            document.getElementById('codeStats').textContent = stats;
+        }
+        
+        function formatJson(prog) {
+            const preview = {
+                hash: '0x' + prog.hash.map(b => b.toString(16).padStart(2, '0')).join(''),
+                input_bits: prog.input_bits,
+                bp_matrices: `[${prog.bp_matrices.length} matrices...]`,
+                bp_matrices_preview: prog.bp_matrices.slice(0, 2)
+            };
+            return syntaxHighlight(JSON.stringify(preview, null, 2));
+        }
+        
+        function formatRust(prog) {
+            return `<span class="comment">// Ma-Dai-Shi Obfuscated Program</span>
+<span class="keyword">pub struct</span> <span class="type">ObfuscatedProgram</span> {
+    <span class="comment">/// Program commitment hash</span>
+    <span class="keyword">pub</span> <span class="property">hash</span>: [<span class="type">u8</span>; <span class="number">32</span>],
+    
+    <span class="comment">/// Matrix branching program (${prog.bp_matrices.length} steps)</span>
+    <span class="keyword">pub</span> <span class="property">bp_matrices</span>: <span class="type">Vec</span>&lt;[[<span class="type">u8</span>; <span class="number">5</span>]; <span class="number">5</span>]&gt;,
+    
+    <span class="comment">/// Input size in bits</span>
+    <span class="keyword">pub</span> <span class="property">input_bits</span>: <span class="type">usize</span>,  <span class="comment">// ${prog.input_bits}</span>
+}
+
+<span class="comment">// Evaluation: multiply matrices based on input bits</span>
+<span class="comment">// Output 1 if result == Identity, else 0</span>
+<span class="keyword">fn</span> <span class="property">evaluate</span>(prog: &<span class="type">ObfuscatedProgram</span>, input: &[<span class="type">bool</span>]) -> <span class="type">u64</span> {
+    <span class="keyword">let mut</span> result = <span class="property">identity_matrix</span>();
+    <span class="keyword">for</span> (i, &bit) <span class="keyword">in</span> input.iter().enumerate() {
+        <span class="keyword">if</span> bit {
+            result = <span class="property">matrix_mul</span>(&result, &prog.bp_matrices[i]);
+        }
+    }
+    <span class="keyword">if</span> result == <span class="property">identity_matrix</span>() { <span class="number">1</span> } <span class="keyword">else</span> { <span class="number">0</span> }
+}`;
+        }
+        
+        function formatMatrices(prog) {
+            let output = `<span class="comment">// Branching Program Matrices (first 4 of ${prog.bp_matrices.length})</span>\n`;
+            output += `<span class="comment">// Field: GF(251), Dimension: 5x5</span>\n\n`;
+            
+            for (let i = 0; i < Math.min(4, prog.bp_matrices.length); i++) {
+                output += `<span class="property">M[${i}]</span> = [\n`;
+                for (let r = 0; r < 5; r++) {
+                    const row = prog.bp_matrices[i][r].map(v => 
+                        `<span class="number">${v.toString().padStart(3)}</span>`
+                    ).join(', ');
+                    output += `  [${row}],\n`;
+                }
+                output += `]\n\n`;
+            }
+            
+            if (prog.bp_matrices.length > 4) {
+                output += `<span class="comment">// ... ${prog.bp_matrices.length - 4} more matrices</span>\n`;
+            }
+            
+            return output;
+        }
+        
+        function syntaxHighlight(json) {
+            return json
+                .replace(/(".*?")/g, '<span class="string">$1</span>')
+                .replace(/\b(\d+)\b/g, '<span class="number">$1</span>')
+                .replace(/\b(true|false|null)\b/g, '<span class="keyword">$1</span>');
+        }
+        
+        // Helpers
+        function indexToSeed(index) {
+            const seed = [];
+            let n = BigInt(index);
+            for (let i = 0; i < 12; i++) {
+                seed.push(Number(n % 2048n));
+                n = n / 2048n;
+            }
+            return seed;
+        }
+        
+        function showStatus(id, type, message) {
+            const el = document.getElementById(id);
+            el.style.display = 'block';
+            el.className = `status ${type}`;
+            el.textContent = message;
+        }
+        
+        function log(message, type = '') {
+            const el = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            el.appendChild(entry);
+            el.scrollTop = el.scrollHeight;
+        }
+        
+        // Start
+        initialize().catch(e => log(`Init error: ${e}`, 'error'));
+    </script>
+</body>
+</html>

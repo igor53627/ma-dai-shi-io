@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma-Dai-Shi iO Protocol Visualization</title>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --card: #12121a;
+            --border: #2a2a3a;
+            --text: #e0e0e0;
+            --accent: #6366f1;
+            --accent2: #8b5cf6;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --blue: #3b82f6;
+            --orange: #f97316;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle { color: #666; margin-bottom: 2rem; }
+        
+        .section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section h2 {
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .section h2 .num {
+            background: var(--accent);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+        
+        .key-property {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid var(--accent);
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .key-property strong { color: var(--accent); }
+        
+        /* Buttons */
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            font-family: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        button.secondary { background: var(--border); }
+        button.small { padding: 0.25rem 0.5rem; font-size: 0.7rem; }
+        
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        /* ==================== STEPPER ==================== */
+        .stepper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        
+        .stepper::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 40px;
+            right: 40px;
+            height: 2px;
+            background: var(--border);
+            z-index: 0;
+        }
+        
+        .step {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.7rem;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 1;
+            text-align: center;
+            min-width: 80px;
+        }
+        
+        .step:hover { border-color: var(--accent); color: var(--text); }
+        
+        .step.active {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: white;
+        }
+        
+        .step.done {
+            border-color: var(--success);
+            color: var(--success);
+        }
+        
+        .step-num {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        /* Step detail panel */
+        .step-detail {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            min-height: 280px;
+        }
+        
+        .step-detail h3 {
+            color: var(--accent);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .step-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        
+        .step-visual {
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 180px;
+        }
+        
+        .step-explain {
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+        
+        .step-explain ul {
+            padding-left: 1.2rem;
+            margin-top: 0.5rem;
+        }
+        
+        .step-explain li { margin-bottom: 0.5rem; }
+        
+        /* Circuit diagram */
+        .circuit-diagram {
+            font-size: 0.75rem;
+            text-align: center;
+        }
+        
+        .circuit-gate {
+            display: inline-block;
+            border: 2px solid var(--accent);
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            margin: 0.25rem;
+            background: var(--card);
+        }
+        
+        .circuit-wire {
+            color: var(--accent);
+        }
+        
+        /* BP diagram */
+        .bp-diagram {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.7rem;
+        }
+        
+        .bp-node {
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--card);
+            transition: all 0.3s;
+        }
+        
+        .bp-node.active {
+            border-color: var(--success);
+            background: rgba(34, 197, 94, 0.2);
+        }
+        
+        .bp-edge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.6rem;
+        }
+        
+        .bp-edge-0 { color: var(--blue); }
+        .bp-edge-1 { color: var(--orange); }
+        
+        /* Mini matrices */
+        .matrix-mini {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            width: 45px;
+            margin: 0.25rem;
+        }
+        
+        .matrix-mini-cell {
+            width: 13px;
+            height: 13px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.5rem;
+        }
+        
+        .matrix-mini-cell.highlight { background: var(--accent); color: white; }
+        
+        .matrix-pair {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .matrix-label {
+            font-size: 0.6rem;
+            color: #666;
+            text-align: center;
+        }
+        
+        .matrix-label.bit0 { color: var(--blue); }
+        .matrix-label.bit1 { color: var(--orange); }
+        
+        /* Randomization visual */
+        .rand-visual {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.7rem;
+        }
+        
+        .rand-matrix {
+            padding: 0.5rem;
+            border: 2px dashed var(--border);
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .rand-matrix.r { border-color: var(--warning); color: var(--warning); }
+        .rand-matrix.m { border-color: var(--accent); color: var(--accent); }
+        
+        /* ObfProg visual */
+        .obf-box {
+            background: linear-gradient(135deg, var(--card), var(--bg));
+            border: 2px solid var(--success);
+            border-radius: 8px;
+            padding: 1rem 2rem;
+            text-align: center;
+        }
+        
+        .obf-box .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .obf-box .label {
+            color: var(--success);
+            font-weight: bold;
+        }
+        
+        .obf-box .size {
+            font-size: 0.7rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        
+        /* ==================== BP SIMULATOR ==================== */
+        .bp-simulator {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 1.5rem;
+        }
+        
+        .bp-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .bp-controls label {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .bp-controls input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.5rem;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            letter-spacing: 0.5em;
+            text-align: center;
+        }
+        
+        .bp-controls input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .bit-display {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+        
+        .bit-box {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .bit-box.bit0 { border-color: var(--blue); color: var(--blue); }
+        .bit-box.bit1 { border-color: var(--orange); color: var(--orange); }
+        .bit-box.active { 
+            transform: scale(1.1);
+            box-shadow: 0 0 10px currentColor;
+        }
+        
+        .bp-matrices {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .bp-layer {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: var(--bg);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .bp-layer.active {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--accent);
+        }
+        
+        .bp-layer.done {
+            opacity: 0.5;
+        }
+        
+        .bp-layer-label {
+            font-size: 0.75rem;
+            color: #888;
+            min-width: 60px;
+        }
+        
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+        }
+        
+        .matrix-cell {
+            width: 24px;
+            height: 24px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            transition: all 0.2s;
+        }
+        
+        .matrix-cell.highlight { 
+            background: var(--accent); 
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        .matrix-wrapper {
+            text-align: center;
+        }
+        
+        .matrix-wrapper .label {
+            font-size: 0.65rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .matrix-wrapper .label.bit0 { color: var(--blue); }
+        .matrix-wrapper .label.bit1 { color: var(--orange); }
+        
+        .matrix-wrapper.selected {
+            transform: scale(1.05);
+        }
+        
+        .matrix-wrapper.selected .matrix-grid {
+            box-shadow: 0 0 15px var(--accent);
+        }
+        
+        .bp-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .bp-result .label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+        
+        .bp-result .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .bp-result .value.success { color: var(--success); }
+        .bp-result .value.fail { color: var(--error); }
+        
+        /* ==================== INDISTINGUISHABILITY ==================== */
+        .indist-container {
+            position: relative;
+        }
+        
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .view-toggle button {
+            flex: 1;
+        }
+        
+        .view-toggle button.active {
+            background: var(--success);
+        }
+        
+        .dual-view {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .circuit-panel {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.5s;
+        }
+        
+        .circuit-panel.blurred .internal {
+            filter: blur(8px);
+            opacity: 0.3;
+            user-select: none;
+            pointer-events: none;
+        }
+        
+        .circuit-panel h4 {
+            font-size: 0.8rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .circuit-panel h4 .badge {
+            background: var(--accent);
+            color: white;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+        }
+        
+        .circuit-panel.a h4 .badge { background: var(--blue); }
+        .circuit-panel.b h4 .badge { background: var(--orange); }
+        
+        .circuit-code {
+            background: var(--card);
+            border-radius: 4px;
+            padding: 0.75rem;
+            font-size: 0.7rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .circuit-code .keyword { color: #c792ea; }
+        .circuit-code .op { color: #89ddff; }
+        .circuit-code .num { color: #f78c6c; }
+        
+        .obf-output {
+            background: var(--card);
+            border: 2px solid var(--success);
+            border-radius: 8px;
+            padding: 0.75rem;
+            text-align: center;
+        }
+        
+        .obf-output .label {
+            font-size: 0.65rem;
+            color: #888;
+            margin-bottom: 0.25rem;
+        }
+        
+        .obf-output .hash {
+            font-size: 0.6rem;
+            color: var(--success);
+            word-break: break-all;
+        }
+        
+        .attacker-message {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .attacker-message.visible { display: block; }
+        
+        .attacker-message h4 {
+            color: var(--error);
+            margin-bottom: 0.5rem;
+        }
+        
+        .attacker-message p {
+            font-size: 0.8rem;
+            color: #888;
+        }
+        
+        /* Game */
+        .game-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .game-container h4 {
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+        
+        .game-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+        
+        .game-buttons button {
+            min-width: 120px;
+        }
+        
+        .game-result {
+            font-size: 0.85rem;
+            padding: 0.75rem;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .game-result.visible { display: block; }
+        .game-result.correct { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .game-result.wrong { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+        
+        .game-stats {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        /* ==================== HERO DIAGRAM ==================== */
+        .hero-flow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 0;
+        }
+        
+        .hero-node {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            text-align: center;
+            min-width: 200px;
+            transition: all 0.3s;
+        }
+        
+        .hero-node.highlight {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+        
+        .hero-node .icon { font-size: 1.25rem; margin-bottom: 0.25rem; }
+        .hero-node .label { font-size: 0.8rem; font-weight: bold; }
+        .hero-node .sub { font-size: 0.65rem; color: #666; }
+        
+        .hero-arrow {
+            color: var(--accent);
+            font-size: 1.25rem;
+        }
+        
+        .hero-annotation {
+            position: absolute;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.65rem;
+            max-width: 150px;
+        }
+        
+        .hero-annotation.left { right: calc(50% + 130px); text-align: right; }
+        .hero-annotation.right { left: calc(50% + 130px); text-align: left; }
+        
+        .hero-annotation strong { color: var(--accent); }
+        
+        .hero-wrapper {
+            position: relative;
+            padding: 2rem 0;
+        }
+        
+        /* ==================== MISC ==================== */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        th, td {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        th {
+            color: #888;
+            font-weight: normal;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+        }
+        
+        td.highlight { color: var(--success); }
+        td.warn { color: var(--warning); }
+        
+        nav {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        nav a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        
+        nav a:hover { text-decoration: underline; }
+        
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: #666;
+            font-size: 0.75rem;
+        }
+        
+        footer a { color: var(--accent); }
+        
+        @media (max-width: 768px) {
+            .step-content { grid-template-columns: 1fr; }
+            .bp-simulator { grid-template-columns: 1fr; }
+            .dual-view { grid-template-columns: 1fr; }
+            .two-col { grid-template-columns: 1fr; }
+            .stepper { flex-wrap: wrap; gap: 0.5rem; }
+            .stepper::before { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav>
+            <a href="index.html">[Back to Honeypot Demo]</a>
+        </nav>
+        
+        <h1>Ma-Dai-Shi iO Protocol</h1>
+        <p class="subtitle">Interactive visualization of indistinguishability obfuscation</p>
+        
+        <!-- ==================== SECTION 1: STEPPER PIPELINE ==================== -->
+        <div class="section">
+            <h2><span class="num">1</span> Obfuscation Pipeline</h2>
+            <div class="key-property">
+                <strong>Goal:</strong> Transform a circuit into an opaque program that computes the same function 
+                but reveals nothing about its implementation.
+            </div>
+            
+            <div class="stepper" id="stepper">
+                <div class="step active" data-step="0" onclick="goToStep(0)">
+                    <span class="step-num">1</span>
+                    Circuit
+                </div>
+                <div class="step" data-step="1" onclick="goToStep(1)">
+                    <span class="step-num">2</span>
+                    Padding
+                </div>
+                <div class="step" data-step="2" onclick="goToStep(2)">
+                    <span class="step-num">3</span>
+                    LiO
+                </div>
+                <div class="step" data-step="3" onclick="goToStep(3)">
+                    <span class="step-num">4</span>
+                    Security
+                </div>
+                <div class="step" data-step="4" onclick="goToStep(4)">
+                    <span class="step-num">5</span>
+                    ObfProg
+                </div>
+            </div>
+            
+            <div class="step-detail" id="stepDetail">
+                <!-- Content injected by JS -->
+            </div>
+            
+            <div class="btn-group">
+                <button onclick="prevStep()" id="prevBtn" disabled>Prev</button>
+                <button onclick="nextStep()" id="nextBtn">Next</button>
+                <button onclick="playAllSteps()" class="secondary">Play All</button>
+            </div>
+        </div>
+        
+        <!-- ==================== SECTION 2: CIRCUIT EVALUATION ==================== -->
+        <div class="section">
+            <h2><span class="num">2</span> Circuit Evaluation Demo</h2>
+            <div class="key-property">
+                <strong>How the honeypot works:</strong> The obfuscated program evaluates a circuit 
+                that checks if your seed phrase matches the hidden secret. Try different inputs!
+            </div>
+            
+            <div class="bp-simulator">
+                <div class="bp-controls">
+                    <div>
+                        <label>Input bits (3-bit secret):</label>
+                        <input type="text" id="bpInput" value="101" maxlength="3" 
+                               oninput="this.value = this.value.replace(/[^01]/g, '').slice(0,3)">
+                        <div class="bit-display" id="bitDisplay"></div>
+                    </div>
+                    
+                    <div class="btn-group" style="flex-direction: column;">
+                        <button onclick="runCircuit()">Evaluate</button>
+                        <button onclick="resetCircuit()" class="secondary">Reset</button>
+                    </div>
+                    
+                    <div class="bp-result">
+                        <div class="label">Output</div>
+                        <div class="value" id="bpOutput">-</div>
+                    </div>
+                    
+                    <div style="font-size: 0.7rem; color: #666; margin-top: 1rem;">
+                        <strong>Secret:</strong> 101<br>
+                        Try entering different values!
+                    </div>
+                </div>
+                
+                <div class="bp-matrices" id="bpMatrices">
+                    <div style="padding: 1rem; background: var(--bg); border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 1rem;">Circuit: f(x) = (x == "101") ? 1 : 0</div>
+                        <div class="circuit-diagram">
+                            <div>x<sub>0</sub> <span class="circuit-wire">--></span> <span class="circuit-gate" id="g0">==1?</span></div>
+                            <div>x<sub>1</sub> <span class="circuit-wire">--></span> <span class="circuit-gate" id="g1">==0?</span></div>
+                            <div>x<sub>2</sub> <span class="circuit-wire">--></span> <span class="circuit-gate" id="g2">==1?</span></div>
+                            <div style="margin-top: 0.5rem;">
+                                <span class="circuit-wire">--></span> <span class="circuit-gate" id="g3">AND</span> <span class="circuit-wire">--></span> output
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <p style="font-size: 0.7rem; color: #666; margin-top: 1rem; text-align: center;">
+                In the real honeypot: 128-bit input from 12 BIP-39 words. The circuit is obfuscated so you can't see the secret.
+            </p>
+        </div>
+        
+        <!-- ==================== SECTION 3: INDISTINGUISHABILITY ==================== -->
+        <div class="section">
+            <h2><span class="num">3</span> Indistinguishability Game</h2>
+            <div class="key-property">
+                <strong>iO Guarantee:</strong> If two circuits compute the same function, 
+                their obfuscations are computationally indistinguishable. 
+                No efficient attacker can tell which original circuit was used.
+            </div>
+            
+            <div class="indist-container">
+                <div class="view-toggle">
+                    <button onclick="setView('developer')" id="devViewBtn" class="active">Developer View</button>
+                    <button onclick="setView('attacker')" id="atkViewBtn">Attacker View</button>
+                </div>
+                
+                <div class="dual-view">
+                    <div class="circuit-panel a" id="panelA">
+                        <h4><span class="badge">A</span> Circuit A</h4>
+                        <div class="internal">
+                            <div class="circuit-code">
+<span class="keyword">fn</span> check(x):<br>
+&nbsp;&nbsp;<span class="keyword">return</span> (x[0] <span class="op">==</span> <span class="num">1</span>) <span class="op">AND</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (x[1] <span class="op">==</span> <span class="num">0</span>) <span class="op">AND</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (x[2] <span class="op">==</span> <span class="num">1</span>)
+                            </div>
+                            <p style="font-size: 0.7rem; color: #666;">Direct comparison</p>
+                        </div>
+                        <div class="obf-output">
+                            <div class="label">ObfProg A</div>
+                            <div class="hash">0x7a3f...e291</div>
+                        </div>
+                    </div>
+                    
+                    <div class="circuit-panel b" id="panelB">
+                        <h4><span class="badge">B</span> Circuit B</h4>
+                        <div class="internal">
+                            <div class="circuit-code">
+<span class="keyword">fn</span> check(x):<br>
+&nbsp;&nbsp;<span class="keyword">return</span> <span class="op">NOT</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(x[0] <span class="op">==</span> <span class="num">0</span>) <span class="op">OR</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(x[1] <span class="op">==</span> <span class="num">1</span>) <span class="op">OR</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(x[2] <span class="op">==</span> <span class="num">0</span>))
+                            </div>
+                            <p style="font-size: 0.7rem; color: #666;">De Morgan equivalent</p>
+                        </div>
+                        <div class="obf-output">
+                            <div class="label">ObfProg B</div>
+                            <div class="hash">0x8b2c...f173</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="attacker-message" id="attackerMsg">
+                    <h4>[!] Attacker's View</h4>
+                    <p>You only see two black boxes. Both output the same values for all inputs.<br>
+                    Which circuit was used to create each? <strong>You can't tell.</strong></p>
+                </div>
+                
+                <div class="game-container">
+                    <h4>Can you guess which circuit was obfuscated?</h4>
+                    <p style="font-size: 0.75rem; color: #666; margin-bottom: 1rem;">
+                        We secretly picked either Circuit A or B. Try to guess!
+                    </p>
+                    <div class="game-buttons">
+                        <button onclick="guessCircuit('A')" style="background: var(--blue);">Guess A</button>
+                        <button onclick="guessCircuit('B')" style="background: var(--orange);">Guess B</button>
+                        <button onclick="newGame()" class="secondary">New Game</button>
+                    </div>
+                    <div class="game-result" id="gameResult"></div>
+                    <div class="game-stats">
+                        Correct: <span id="correctCount">0</span> / <span id="totalCount">0</span> 
+                        (<span id="winRate">0</span>%)
+                        <span style="margin-left: 1rem;">Expected: ~50% (random guessing)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ==================== SECTION 4: HERO DIAGRAM ==================== -->
+        <div class="section">
+            <h2><span class="num">4</span> Honeypot: iO + zkSNARK</h2>
+            <div class="key-property">
+                <strong>Double-layer privacy:</strong> iO hides <em>how</em> the seed check works. 
+                zkSNARK hides <em>which</em> seed you found.
+            </div>
+            
+            <div class="hero-wrapper">
+                <div class="hero-flow" id="heroFlow">
+                    <div class="hero-node" id="hero1">
+                        <div class="icon">[?]</div>
+                        <div class="label">User Guess</div>
+                        <div class="sub">12-word seed phrase</div>
+                    </div>
+                    
+                    <div class="hero-arrow">|</div>
+                    <div class="hero-arrow">v</div>
+                    
+                    <div class="hero-node" id="hero2">
+                        <div class="icon">[M]</div>
+                        <div class="label">ObfProg(seed)</div>
+                        <div class="sub">WASM evaluation in browser</div>
+                    </div>
+                    
+                    <div class="hero-arrow">|</div>
+                    <div class="hero-arrow">v</div>
+                    
+                    <div class="hero-node" id="hero3">
+                        <div class="icon">[P]</div>
+                        <div class="label">Noir zkSNARK</div>
+                        <div class="sub">Prove "I know valid seed"</div>
+                    </div>
+                    
+                    <div class="hero-arrow">|</div>
+                    <div class="hero-arrow">v</div>
+                    
+                    <div class="hero-node" id="hero4">
+                        <div class="icon">[OK]</div>
+                        <div class="label">Smart Contract</div>
+                        <div class="sub">Verify proof, transfer ETH</div>
+                    </div>
+                </div>
+                
+                <div class="hero-annotation left" style="top: 80px;">
+                    <strong>iO hides:</strong><br>
+                    The validator logic.<br>
+                    Can't reverse-engineer the seed from the program.
+                </div>
+                
+                <div class="hero-annotation right" style="top: 200px;">
+                    <strong>zkSNARK hides:</strong><br>
+                    The actual seed phrase.<br>
+                    Contract verifies proof without seeing input.
+                </div>
+            </div>
+            
+            <div class="btn-group" style="justify-content: center;">
+                <button onclick="animateHero()">Animate Flow</button>
+                <a href="index.html"><button class="secondary">Try the Honeypot</button></a>
+            </div>
+        </div>
+        
+        <!-- ==================== SECTION 5: COMPARISON ==================== -->
+        <div class="section">
+            <h2><span class="num">5</span> Why Ma-Dai-Shi?</h2>
+            
+            <table>
+                <tr>
+                    <th>Approach</th>
+                    <th>Obfuscation Time</th>
+                    <th>Program Size</th>
+                    <th>Security</th>
+                </tr>
+                <tr>
+                    <td>Naive (truth table)</td>
+                    <td class="warn">O(2^n)</td>
+                    <td class="warn">O(2^n)</td>
+                    <td>None</td>
+                </tr>
+                <tr>
+                    <td>Prior polynomial iO</td>
+                    <td>O(n^c) large c</td>
+                    <td>O(n^c)</td>
+                    <td>LWE + assumptions</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--accent); font-weight: bold;">Ma-Dai-Shi iO</td>
+                    <td class="highlight">Õ(N)</td>
+                    <td class="highlight">Õ(N)</td>
+                    <td class="highlight">LWE + OWF + small iO</td>
+                </tr>
+            </table>
+            
+            <div class="two-col" style="margin-top: 1.5rem;">
+                <div>
+                    <h4 style="font-size: 0.8rem; color: var(--accent); margin-bottom: 0.5rem;">Security Basis</h4>
+                    <ul style="font-size: 0.75rem; color: #888; padding-left: 1.2rem;">
+                        <li>Learning With Errors (LWE)</li>
+                        <li>Sub-exponential one-way functions</li>
+                        <li>iO for small circuits (Õ(λ) size)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.8rem; color: var(--accent); margin-bottom: 0.5rem;">Paper Reference</h4>
+                    <p style="font-size: 0.75rem; color: #888;">
+                        "Quasi-Linear iO via Mathematical Proofs of Equivalence"<br>
+                        <a href="https://eprint.iacr.org/2025/307" style="color: var(--accent);">
+                            eprint.iacr.org/2025/307
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            Ma-Dai-Shi iO Implementation | 
+            <a href="https://github.com/igor53627/circuit-mixing-research">GitHub</a> |
+            <a href="index.html">Honeypot Demo</a>
+        </footer>
+    </div>
+    
+    <script>
+        // ==================== STEPPER PIPELINE ====================
+        let currentStep = 0;
+        const totalSteps = 5;
+        
+        const stepContent = [
+            // Step 0: Circuit
+            {
+                title: 'Step 1: The Circuit',
+                visual: `
+                    <div class="circuit-diagram">
+                        <div style="margin-bottom: 1rem; color: #888;">f(x) = "Is x the secret seed?"</div>
+                        <div>
+                            x<sub>0</sub> <span class="circuit-wire">--></span>
+                            <span class="circuit-gate">==1?</span>
+                            <span class="circuit-wire">--\\</span>
+                        </div>
+                        <div>
+                            x<sub>1</sub> <span class="circuit-wire">--></span>
+                            <span class="circuit-gate">==0?</span>
+                            <span class="circuit-wire">---></span>
+                            <span class="circuit-gate">AND</span>
+                            <span class="circuit-wire">--></span> output
+                        </div>
+                        <div>
+                            x<sub>2</sub> <span class="circuit-wire">--></span>
+                            <span class="circuit-gate">==1?</span>
+                            <span class="circuit-wire">--/</span>
+                        </div>
+                        <div style="margin-top: 1rem; font-size: 0.7rem; color: var(--success);">
+                            Secret: x = 101
+                        </div>
+                    </div>
+                `,
+                explain: `
+                    <p>We start with a <strong>Boolean circuit</strong> that checks if the input matches a secret value.</p>
+                    <ul>
+                        <li>Input: 3 bits (toy example)</li>
+                        <li>Output: 1 if input = "101", else 0</li>
+                        <li>Real honeypot: 128 bits from 12 BIP-39 words</li>
+                    </ul>
+                    <p style="margin-top: 0.5rem; color: var(--warning);">Problem: Anyone can see the circuit and extract the secret!</p>
+                `
+            },
+            // Step 1: Branching Program
+            {
+                title: 'Step 2: Branching Program',
+                visual: `
+                    <div class="bp-diagram">
+                        <div class="bp-node">S</div>
+                        <div class="bp-edge">
+                            <span class="bp-edge-0">0</span>
+                            <span>x<sub>0</sub></span>
+                            <span class="bp-edge-1">1</span>
+                        </div>
+                        <div class="bp-node">.</div>
+                        <div class="bp-edge">
+                            <span class="bp-edge-0">0</span>
+                            <span>x<sub>1</sub></span>
+                            <span class="bp-edge-1">1</span>
+                        </div>
+                        <div class="bp-node">.</div>
+                        <div class="bp-edge">
+                            <span class="bp-edge-0">0</span>
+                            <span>x<sub>2</sub></span>
+                            <span class="bp-edge-1">1</span>
+                        </div>
+                        <div class="bp-node">E</div>
+                    </div>
+                    <div style="margin-top: 1rem; font-size: 0.7rem; color: #888;">
+                        Each layer: bit selects which edge to take
+                    </div>
+                `,
+                explain: `
+                    <p>Pad the circuit to a <strong>fixed topology</strong> using routing networks.</p>
+                    <ul>
+                        <li>All circuits of same size have identical structure</li>
+                        <li>Uses binary tree selectors for routing</li>
+                        <li>Adds copy gadgets for wire fan-out</li>
+                    </ul>
+                    <p style="margin-top: 0.5rem;">This ensures two equivalent circuits produce indistinguishable padded forms.</p>
+                `
+            },
+            // Step 2: LiO
+            {
+                title: 'Step 3: Local iO (LiO)',
+                visual: `
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; align-items: center;">
+                        <div style="font-size: 0.7rem; color: #888;">Gate-by-gate obfuscation</div>
+                        <div class="matrix-pair">
+                            <div>
+                                <div class="matrix-label bit0">SEH</div>
+                                <div class="matrix-mini" id="stepM0"></div>
+                            </div>
+                            <div style="color: #666;">+</div>
+                            <div>
+                                <div class="matrix-label bit1">FHE</div>
+                                <div class="matrix-mini" id="stepM1"></div>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.65rem; color: #888; margin-top: 0.5rem;">
+                            Somewhere Extractable Hash + Homomorphic Encryption
+                        </div>
+                    </div>
+                `,
+                explain: `
+                    <p>Apply <strong>Local iO</strong> gate-by-gate.</p>
+                    <ul>
+                        <li>SEH provides extractability for proofs</li>
+                        <li>FHE enables computation on encrypted gates</li>
+                        <li>Base iO for small augmented circuits</li>
+                    </ul>
+                    <p style="margin-top: 0.5rem;">Each gate is obfuscated independently with consistency proofs.</p>
+                `
+            },
+            // Step 3: Security
+            {
+                title: 'Step 4: Security Properties',
+                visual: `
+                    <div class="rand-visual">
+                        <div class="rand-matrix r">LWE</div>
+                        <div>+</div>
+                        <div class="rand-matrix m">OWF</div>
+                        <div>+</div>
+                        <div class="rand-matrix r">small iO</div>
+                    </div>
+                    <div style="margin-top: 1rem; font-size: 0.7rem; color: #888; text-align: center;">
+                        Security based on standard assumptions<br>
+                        plus iO for constant-size circuits
+                    </div>
+                `,
+                explain: `
+                    <p>Security relies on <strong>well-studied assumptions</strong>.</p>
+                    <ul>
+                        <li>Learning With Errors (LWE) - post-quantum</li>
+                        <li>Sub-exponential one-way functions</li>
+                        <li>iO for very small circuits (Õ(λ) size)</li>
+                    </ul>
+                    <p style="margin-top: 0.5rem; color: var(--success);">Equivalent circuits produce indistinguishable obfuscations!</p>
+                `
+            },
+            // Step 4: ObfProg
+            {
+                title: 'Step 5: Obfuscated Program',
+                visual: `
+                    <div class="obf-box">
+                        <div class="icon">[OK]</div>
+                        <div class="label">ObfProg</div>
+                        <div class="size">~8 KB for 128-bit input</div>
+                    </div>
+                `,
+                explain: `
+                    <p>The final <strong>obfuscated program</strong>.</p>
+                    <ul>
+                        <li>Computes the exact same function as original circuit</li>
+                        <li>Reveals nothing about implementation</li>
+                        <li>Can be evaluated but not reverse-engineered</li>
+                    </ul>
+                    <p style="margin-top: 0.5rem; color: var(--success);">
+                        Ready to deploy! Users can run it but can't extract the secret seed.
+                    </p>
+                `
+            }
+        ];
+        
+        function renderStep(step) {
+            const content = stepContent[step];
+            const detail = document.getElementById('stepDetail');
+            detail.innerHTML = `
+                <h3>${content.title}</h3>
+                <div class="step-content">
+                    <div class="step-visual">${content.visual}</div>
+                    <div class="step-explain">${content.explain}</div>
+                </div>
+            `;
+            
+            // Fill mini matrices for step 2
+            if (step === 2) {
+                fillMiniMatrix('stepM0', [[1,0,0],[0,1,0],[0,0,1]]);
+                fillMiniMatrix('stepM1', [[0,1,0],[1,0,0],[0,0,1]]);
+            }
+            
+            // Update stepper UI
+            document.querySelectorAll('.step').forEach((s, i) => {
+                s.classList.remove('active', 'done');
+                if (i < step) s.classList.add('done');
+                if (i === step) s.classList.add('active');
+            });
+            
+            document.getElementById('prevBtn').disabled = step === 0;
+            document.getElementById('nextBtn').disabled = step === totalSteps - 1;
+        }
+        
+        function fillMiniMatrix(id, values) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-mini-cell';
+                    if (values[i][j] !== 0) cell.classList.add('highlight');
+                    cell.textContent = values[i][j];
+                    el.appendChild(cell);
+                }
+            }
+        }
+        
+        function goToStep(step) {
+            currentStep = step;
+            renderStep(currentStep);
+        }
+        
+        function nextStep() {
+            if (currentStep < totalSteps - 1) {
+                currentStep++;
+                renderStep(currentStep);
+            }
+        }
+        
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                renderStep(currentStep);
+            }
+        }
+        
+        function playAllSteps() {
+            currentStep = 0;
+            renderStep(0);
+            let i = 1;
+            const interval = setInterval(() => {
+                if (i >= totalSteps) {
+                    clearInterval(interval);
+                    return;
+                }
+                currentStep = i;
+                renderStep(i);
+                i++;
+            }, 1500);
+        }
+        
+        // ==================== CIRCUIT EVALUATION ====================
+        const SECRET = "101";
+        
+        function initCircuitDemo() {
+            updateBitDisplay();
+        }
+        
+        function updateBitDisplay() {
+            const input = document.getElementById('bpInput').value.padEnd(3, '0').slice(0, 3);
+            const display = document.getElementById('bitDisplay');
+            display.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const box = document.createElement('div');
+                box.className = `bit-box bit${input[i]}`;
+                box.textContent = input[i];
+                display.appendChild(box);
+            }
+        }
+        
+        function runCircuit() {
+            const input = document.getElementById('bpInput').value.padEnd(3, '0').slice(0, 3);
+            
+            // Highlight gates based on evaluation
+            const g0 = input[0] === '1';
+            const g1 = input[1] === '0';
+            const g2 = input[2] === '1';
+            const result = g0 && g1 && g2;
+            
+            document.getElementById('g0').style.borderColor = g0 ? 'var(--success)' : 'var(--error)';
+            document.getElementById('g1').style.borderColor = g1 ? 'var(--success)' : 'var(--error)';
+            document.getElementById('g2').style.borderColor = g2 ? 'var(--success)' : 'var(--error)';
+            document.getElementById('g3').style.borderColor = result ? 'var(--success)' : 'var(--error)';
+            
+            const outEl = document.getElementById('bpOutput');
+            outEl.textContent = result ? '1' : '0';
+            outEl.className = result ? 'value success' : 'value fail';
+        }
+        
+        function resetCircuit() {
+            document.getElementById('bpOutput').textContent = '-';
+            document.getElementById('bpOutput').className = 'value';
+            ['g0', 'g1', 'g2', 'g3'].forEach(id => {
+                document.getElementById(id).style.borderColor = 'var(--accent)';
+            });
+            updateBitDisplay();
+        }
+        
+        document.getElementById('bpInput').addEventListener('input', () => {
+            updateBitDisplay();
+            resetCircuit();
+        });
+        
+        // ==================== INDISTINGUISHABILITY GAME ====================
+        let currentView = 'developer';
+        let secretCircuit = Math.random() < 0.5 ? 'A' : 'B';
+        let correctGuesses = 0;
+        let totalGuesses = 0;
+        
+        function setView(view) {
+            currentView = view;
+            document.getElementById('devViewBtn').classList.toggle('active', view === 'developer');
+            document.getElementById('atkViewBtn').classList.toggle('active', view === 'attacker');
+            document.getElementById('panelA').classList.toggle('blurred', view === 'attacker');
+            document.getElementById('panelB').classList.toggle('blurred', view === 'attacker');
+            document.getElementById('attackerMsg').classList.toggle('visible', view === 'attacker');
+        }
+        
+        function guessCircuit(guess) {
+            totalGuesses++;
+            const correct = guess === secretCircuit;
+            if (correct) correctGuesses++;
+            
+            const resultEl = document.getElementById('gameResult');
+            resultEl.className = `game-result visible ${correct ? 'correct' : 'wrong'}`;
+            resultEl.textContent = correct 
+                ? `[OK] Correct! It was Circuit ${secretCircuit}. But you got lucky...`
+                : `[X] Wrong! It was Circuit ${secretCircuit}. See? You can't tell!`;
+            
+            document.getElementById('correctCount').textContent = correctGuesses;
+            document.getElementById('totalCount').textContent = totalGuesses;
+            document.getElementById('winRate').textContent = Math.round(correctGuesses / totalGuesses * 100);
+        }
+        
+        function newGame() {
+            secretCircuit = Math.random() < 0.5 ? 'A' : 'B';
+            document.getElementById('gameResult').className = 'game-result';
+            
+            // Randomize displayed hashes to reinforce they look different each time
+            document.querySelector('#panelA .hash').textContent = '0x' + Math.random().toString(16).slice(2, 6) + '...' + Math.random().toString(16).slice(2, 6);
+            document.querySelector('#panelB .hash').textContent = '0x' + Math.random().toString(16).slice(2, 6) + '...' + Math.random().toString(16).slice(2, 6);
+        }
+        
+        // ==================== HERO ANIMATION ====================
+        function animateHero() {
+            const nodes = ['hero1', 'hero2', 'hero3', 'hero4'];
+            nodes.forEach(id => document.getElementById(id).classList.remove('highlight'));
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i > 0) document.getElementById(nodes[i-1]).classList.remove('highlight');
+                if (i >= nodes.length) {
+                    clearInterval(interval);
+                    // Keep last one highlighted
+                    document.getElementById(nodes[nodes.length - 1]).classList.add('highlight');
+                    return;
+                }
+                document.getElementById(nodes[i]).classList.add('highlight');
+                i++;
+            }, 800);
+        }
+        
+        // ==================== INIT ====================
+        renderStep(0);
+        initCircuitDemo();
+        newGame();
+    </script>
+</body>
+</html>

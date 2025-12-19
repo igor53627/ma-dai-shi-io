@@ -1,0 +1,20 @@
+[package]
+name = "ma-dai-shi-io"
+version = "0.1.0"
+edition = "2021"
+description = "Ma-Dai-Shi 2025 Quasi-Linear Indistinguishability Obfuscation"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/igor53627/ma-dai-shi-io"
+readme = "README.md"
+keywords = ["cryptography", "obfuscation", "iO", "circuits"]
+categories = ["cryptography"]
+
+[dependencies]
+rand = "0.8"
+sha2 = "0.10"
+
+[dev-dependencies]
+
+[[example]]
+name = "integration_test"
+path = "examples/integration_test.rs"
