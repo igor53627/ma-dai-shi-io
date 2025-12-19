@@ -1,5 +1,0 @@
-{"log":
- [{"message":
-   ".> LEAN_PATH=././.lake/packages/Cli/.lake/build/lib:././.lake/packages/batteries/.lake/build/lib:././.lake/packages/Qq/.lake/build/lib:././.lake/packages/aesop/.lake/build/lib:././.lake/packages/proofwidgets/.lake/build/lib:././.lake/packages/importGraph/.lake/build/lib:././.lake/packages/LeanSearchClient/.lake/build/lib:././.lake/packages/plausible/.lake/build/lib:././.lake/packages/mathlib/.lake/build/lib:././.lake/build/lib DYLD_LIBRARY_PATH= /Users/user/.elan/toolchains/leanprover--lean4---v4.14.0/bin/lean ././././MaDaiShi.lean -R ./././. -o ././.lake/build/lib/MaDaiShi.olean -i ././.lake/build/lib/MaDaiShi.ilean -c ././.lake/build/ir/MaDaiShi.c --json",
-   "level": "trace"}],
- "depHash": "6692473800394058127"}
