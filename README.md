@@ -71,22 +71,22 @@ The demo lets you:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Ma-Dai-Shi Quasi-Linear iO                   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│   Circuit C + Equivalence Proof π                               │
-│              │                                                  │
-│              ▼                                                  │
-│   Pad to fixed topology (routing networks)                      │
-│              │                                                  │
-│              ▼                                                  │
-│   LiO (local iO with SEH + FHE)                                │
-│              │                                                  │
-│              ▼                                                  │
-│   ObfuscatedProgram                                             │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------------+
+|                    Ma-Dai-Shi Quasi-Linear iO                     |
++-------------------------------------------------------------------+
+|                                                                   |
+|   Circuit C + Equivalence Proof pi                                |
+|              |                                                    |
+|              v                                                    |
+|   Pad to fixed topology (routing networks)                        |
+|              |                                                    |
+|              v                                                    |
+|   LiO (local iO with SEH + FHE)                                   |
+|              |                                                    |
+|              v                                                    |
+|   ObfuscatedProgram                                               |
+|                                                                   |
++-------------------------------------------------------------------+
 ```
 
 ## Complexity Comparison

@@ -17,23 +17,23 @@ MaDaiShi/
 
 ## Key Definitions Formalized
 
-| Definition | Section | File |
-|------------|---------|------|
-| `TopologicallyEquivalent` | 2.1 | Circuit.lean |
-| `FunctionallyEquivalent` | 2.1 | Circuit.lean |
-| `SEquivalent s C C'` | 2.3 Def 1 | SEquivalence.lean |
-| `TransitiveSEquivalent s l C C'` | 2.3 Def 2 | SEquivalence.lean |
-| `EFProof` | 2.2 | ExtendedFrege.lean |
-| `EquivalenceProof C C'` | 2.2 | ExtendedFrege.lean |
+| Definition                         | Section    | File                |
+|------------------------------------|------------|---------------------|
+| `TopologicallyEquivalent`          | 2.1        | Circuit.lean        |
+| `FunctionallyEquivalent`           | 2.1        | Circuit.lean        |
+| `SEquivalent s C C'`               | 2.3 Def 1  | SEquivalence.lean   |
+| `TransitiveSEquivalent s l C C'`   | 2.3 Def 2  | SEquivalence.lean   |
+| `EFProof`                          | 2.2        | ExtendedFrege.lean  |
+| `EquivalenceProof C C'`            | 2.2        | ExtendedFrege.lean  |
 
 ## Key Theorems (Stated, not proven)
 
-| Theorem | Status |
-|---------|--------|
-| Lemma 2.1: EF proof → circuit | `sorry` |
-| Lemma 2.3: Trivial equivalence proof | `sorry` |
-| Lemma 3.1: Padding preserves functionality | `sorry` |
-| Lemma 3.1: Padding yields transitive O(log N)-equiv | `sorry` |
+| Theorem                                              | Status   |
+|------------------------------------------------------|----------|
+| Lemma 2.1: EF proof -> circuit                       | `sorry`  |
+| Lemma 2.3: Trivial equivalence proof                 | `sorry`  |
+| Lemma 3.1: Padding preserves functionality           | `sorry`  |
+| Lemma 3.1: Padding yields transitive O(log N)-equiv  | `sorry`  |
 
 ## Building
 
