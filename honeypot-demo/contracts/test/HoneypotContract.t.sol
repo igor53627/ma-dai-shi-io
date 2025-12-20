@@ -104,7 +104,7 @@ contract SeedPhraseHoneypotTest is Test {
         assertEq(prizeAmount, PRIZE_AMOUNT);
         assertFalse(isClaimed);
         assertEq(winnerAddr, address(0));
-        assertGe(age, 0);
+        assertLe(age, 3600); // Age should be within 1 hour of deployment
     }
 
     function test_RevertZeroProgramHash() public {

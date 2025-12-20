@@ -6,7 +6,7 @@ pragma solidity ^0.8.20;
 contract MockVerifier {
     function verify(bytes calldata proof, bytes32[] calldata publicInputs) external pure returns (bool) {
         // In production, this would verify the ZK proof
-        // For demo, check proof length matches UltraHonk format (~4KB)
+        // For demo, check proof has minimum length (simplified check)
         return proof.length > 100;
     }
 }

@@ -9,8 +9,17 @@ interface IHonkVerifier {
 }
 
 contract DeployScript is Script {
+    // NOTE: Default key is Anvil/Hardhat test account #0 - ONLY for local development!
+    // For production deployments, always set PRIVATE_KEY environment variable.
+    uint256 constant ANVIL_DEFAULT_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    
     function run() external {
-        uint256 deployerPrivateKey = vm.envOr("PRIVATE_KEY", uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80));
+        uint256 deployerPrivateKey = vm.envOr("PRIVATE_KEY", ANVIL_DEFAULT_KEY);
+        
+        // Warn if using default key on non-local chain
+        if (deployerPrivateKey == ANVIL_DEFAULT_KEY && block.chainid != 31337) {
+            console2.log("[WARN] Using default Anvil key on non-local chain!");
+        }
         
         // Program hash: 136 (simple_hash for 16 identity matrices)
         bytes32 obfProgHash = bytes32(uint256(136));
