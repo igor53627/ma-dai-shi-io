@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Core Library Refactoring (Milestone 0 & 1)
+- Refactored stub types into modular architecture with proper trait abstractions
+- Created `src/circuit.rs` - Circuit/Gate/ControlFunction with evaluation and random generation
+- Created `src/crypto/` module with cryptographic primitive traits:
+  - `fhe.rs` - FHE trait with StubFhe implementation
+  - `prf.rs` - GGM-based Puncturable PRF implementation (real crypto!)
+  - `prg.rs` - SHA-256 based PRG implementation (real crypto!)
+  - `seh.rs` - Somewhere Extractable Hash trait with StubSeh
+  - `obf.rs` - Small-circuit iO trait (documented assumption)
+- Created `src/lio.rs` - Local iO implementation with:
+  - Real PRF-based wire encryption (GGM tree)
+  - Real MAC generation using PRG
+  - Encrypted truth tables per gate
+  - Correct evaluation verified against plaintext circuits
+- Created `src/padding.rs` - Circuit padding with routing networks
+- Added `src/lib.rs` compatibility module for proven_stealth_mix
+- All 34 unit tests pass, 7 integration tests pass
+
 ### Honeypot Demo Improvements
 - Added `simple_hash` to WASM matching Noir circuit commitment scheme
 - Added `generate_noir_witness()` for generating Noir-compatible witness JSON
