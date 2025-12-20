@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma-Dai-Shi E2E Test</title>
+    <style>
+        body {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 { color: #6366f1; }
+        .step { 
+            background: #12121a; 
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .step h3 { margin: 0 0 0.5rem 0; color: #888; font-size: 0.875rem; }
+        .pass { color: #22c55e; }
+        .fail { color: #ef4444; }
+        .running { color: #f59e0b; }
+        pre { 
+            background: #0d0d12; 
+            padding: 0.5rem; 
+            overflow-x: auto;
+            font-size: 0.75rem;
+        }
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-right: 0.5rem;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        #output { white-space: pre-wrap; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <h1>Ma-Dai-Shi E2E Test</h1>
+    <p>Automated end-to-end test of WASM, Noir proving, and contract verification.</p>
+    
+    <div style="margin: 1rem 0;">
+        <button id="runBtn" onclick="runTests()">Run All Tests</button>
+        <button onclick="runTests('wasm')">WASM Only</button>
+        <button onclick="runTests('proof')">Proof Only</button>
+        <button onclick="runTests('contract')">Contract Only</button>
+    </div>
+    
+    <div class="step" id="step1">
+        <h3>1. WASM Module Initialization</h3>
+        <div id="step1-status" class="running">Waiting...</div>
+    </div>
+    
+    <div class="step" id="step2">
+        <h3>2. Seed Evaluation (valid seed)</h3>
+        <div id="step2-status" class="running">Waiting...</div>
+    </div>
+    
+    <div class="step" id="step3">
+        <h3>3. Noir Witness Generation</h3>
+        <div id="step3-status" class="running">Waiting...</div>
+    </div>
+    
+    <div class="step" id="step4">
+        <h3>4. Noir Proof Generation (may take ~30s)</h3>
+        <div id="step4-status" class="running">Waiting...</div>
+    </div>
+    
+    <div class="step" id="step5">
+        <h3>5. Local Proof Verification</h3>
+        <div id="step5-status" class="running">Waiting...</div>
+    </div>
+    
+    <div class="step" id="step6">
+        <h3>6. Contract Verification (Tenderly)</h3>
+        <div id="step6-status" class="running">Waiting...</div>
+    </div>
+    
+    <div class="step">
+        <h3>Test Output</h3>
+        <pre id="output"></pre>
+    </div>
+
+    <script type="module">
+        import init, { 
+            evaluate_seed, 
+            generate_noir_witness 
+        } from './pkg/honeypot_wasm.js';
+        
+        import { initProver, generateProof, verifyProof, proofToHex } from './src/noir-prover.js';
+        import { createPublicClient, http } from 'viem';
+        
+        const RPC_URL = 'https://virtual.sepolia.eu.rpc.tenderly.co/4d623b04-35fd-4fe7-8e76-6c2757f265ad';
+        const HONEYPOT_ADDRESS = '0xCBf7fe54F7aEe6eD748e47094BD6E7286F3af276';
+        const VERIFIER_ADDRESS = '0x4cD6BA54F81213d27D650C750e27c234d8a3042B';
+        
+        let obfProg = null;
+        let circuit = null;
+        let testResults = {};
+        
+        function log(msg) {
+            const el = document.getElementById('output');
+            el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+            console.log(msg);
+        }
+        
+        function setStatus(step, status, message) {
+            const el = document.getElementById(`step${step}-status`);
+            el.className = status;
+            el.innerHTML = message;
+        }
+        
+        async function loadData() {
+            // Load obfuscated program
+            const progResp = await fetch('./data/obf_prog.json');
+            obfProg = await progResp.json();
+            log(`Loaded obf_prog: ${obfProg.bp_matrices.length} matrices, hash=${obfProg.simple_hash}`);
+            
+            // Load circuit
+            const circuitResp = await fetch('./data/honeypot_medium.json');
+            circuit = await circuitResp.json();
+            log('Loaded circuit JSON');
+        }
+        
+        async function testWasm() {
+            log('--- Test 1: WASM Initialization ---');
+            setStatus(1, 'running', 'Initializing...');
+            
+            try {
+                await init();
+                log('[PASS] WASM initialized');
+                setStatus(1, 'pass', '[PASS] WASM module loaded');
+                return true;
+            } catch (e) {
+                log(`[FAIL] WASM init: ${e}`);
+                setStatus(1, 'fail', `[FAIL] ${e.message}`);
+                return false;
+            }
+        }
+        
+        async function testEvaluation() {
+            log('--- Test 2: Seed Evaluation ---');
+            setStatus(2, 'running', 'Evaluating seed...');
+            
+            try {
+                // Use all zeros seed - should be valid with identity matrices
+                const seed = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                const result = await evaluate_seed(obfProg, seed);
+                
+                log(`Evaluation result: is_valid=${result.is_valid}, output=${result.output}, time=${result.time_ms}ms`);
+                
+                if (result.is_valid && result.output === 1) {
+                    setStatus(2, 'pass', `[PASS] Seed valid (output=1, ${result.time_ms.toFixed(1)}ms)`);
+                    testResults.seed = seed;
+                    return true;
+                } else {
+                    setStatus(2, 'fail', `[FAIL] Expected valid seed, got output=${result.output}`);
+                    return false;
+                }
+            } catch (e) {
+                log(`[FAIL] Evaluation: ${e}`);
+                setStatus(2, 'fail', `[FAIL] ${e.message}`);
+                return false;
+            }
+        }
+        
+        async function testWitnessGeneration() {
+            log('--- Test 3: Noir Witness Generation ---');
+            setStatus(3, 'running', 'Generating witness...');
+            
+            try {
+                const seed = testResults.seed || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                const witness = await generate_noir_witness(obfProg, seed);
+                
+                log(`Witness generated:`);
+                log(`  obf_prog_hash: ${witness.obf_prog_hash}`);
+                log(`  evaluation_output: ${witness.evaluation_output}`);
+                log(`  seed_phrase: [${witness.seed_phrase.slice(0, 3).join(', ')}...]`);
+                log(`  bp_matrices_flat: ${witness.bp_matrices_flat.length} elements`);
+                
+                if (witness.obf_prog_hash === "0x88" && witness.evaluation_output === "0x01") {
+                    setStatus(3, 'pass', '[PASS] Witness generated (hash=0x88, output=0x01)');
+                    testResults.witness = witness;
+                    return true;
+                } else {
+                    setStatus(3, 'fail', `[FAIL] Unexpected witness values`);
+                    return false;
+                }
+            } catch (e) {
+                log(`[FAIL] Witness: ${e}`);
+                setStatus(3, 'fail', `[FAIL] ${e.message}`);
+                return false;
+            }
+        }
+        
+        async function testProofGeneration() {
+            log('--- Test 4: Noir Proof Generation ---');
+            setStatus(4, 'running', 'Loading prover (may take a moment)...');
+            
+            try {
+                await initProver(circuit);
+                log('Prover initialized');
+                setStatus(4, 'running', 'Generating proof (30-60s)...');
+                
+                const witness = testResults.witness;
+                const inputs = {
+                    obf_prog_hash: witness.obf_prog_hash,
+                    evaluation_output: witness.evaluation_output,
+                    seed_phrase: witness.seed_phrase,
+                    bp_matrices_flat: witness.bp_matrices_flat,
+                };
+                
+                const startTime = performance.now();
+                const proof = await generateProof(inputs);
+                const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+                
+                log(`Proof generated in ${elapsed}s`);
+                log(`Proof size: ${proof.proof.length} bytes`);
+                
+                setStatus(4, 'pass', `[PASS] Proof generated (${proof.proof.length} bytes, ${elapsed}s)`);
+                testResults.proof = proof;
+                return true;
+            } catch (e) {
+                log(`[FAIL] Proof generation: ${e}`);
+                setStatus(4, 'fail', `[FAIL] ${e.message}`);
+                return false;
+            }
+        }
+        
+        async function testLocalVerification() {
+            log('--- Test 5: Local Proof Verification ---');
+            setStatus(5, 'running', 'Verifying locally...');
+            
+            try {
+                const isValid = await verifyProof(testResults.proof);
+                
+                if (isValid) {
+                    log('[PASS] Proof verified locally');
+                    setStatus(5, 'pass', '[PASS] Proof valid');
+                    testResults.proofHex = proofToHex(testResults.proof);
+                    log(`Proof hex: ${testResults.proofHex.slice(0, 66)}...`);
+                    return true;
+                } else {
+                    log('[FAIL] Proof invalid');
+                    setStatus(5, 'fail', '[FAIL] Invalid proof');
+                    return false;
+                }
+            } catch (e) {
+                log(`[FAIL] Verification: ${e}`);
+                setStatus(5, 'fail', `[FAIL] ${e.message}`);
+                return false;
+            }
+        }
+        
+        async function testContractVerification() {
+            log('--- Test 6: Contract Verification (static call) ---');
+            setStatus(6, 'running', 'Calling verifier contract...');
+            
+            try {
+                const client = createPublicClient({
+                    transport: http(RPC_URL),
+                });
+                
+                // Check honeypot status first
+                const claimed = await client.readContract({
+                    address: HONEYPOT_ADDRESS,
+                    abi: [{ name: 'claimed', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'bool' }] }],
+                    functionName: 'claimed',
+                });
+                
+                log(`Honeypot claimed: ${claimed}`);
+                
+                if (claimed) {
+                    setStatus(6, 'pass', '[PASS] Honeypot already claimed (skipping verification)');
+                    return true;
+                }
+                
+                // Try static call to verify proof would work
+                // Note: We use the HonkVerifier's verify function directly
+                const proofBytes = testResults.proofHex;
+                
+                // Call the honeypot contract's claim function with eth_call (simulation)
+                log('Simulating claim transaction...');
+                
+                try {
+                    await client.simulateContract({
+                        address: HONEYPOT_ADDRESS,
+                        abi: [{ 
+                            name: 'claim', 
+                            type: 'function', 
+                            stateMutability: 'nonpayable', 
+                            inputs: [{ name: 'proof', type: 'bytes' }], 
+                            outputs: [] 
+                        }],
+                        functionName: 'claim',
+                        args: [proofBytes],
+                        account: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', // Anvil default
+                    });
+                    
+                    log('[PASS] Contract simulation successful - proof would be accepted!');
+                    setStatus(6, 'pass', '[PASS] Contract would accept proof');
+                    return true;
+                } catch (simError) {
+                    log(`[FAIL] Contract simulation failed: ${simError.message}`);
+                    setStatus(6, 'fail', `[FAIL] ${simError.message}`);
+                    return false;
+                }
+            } catch (e) {
+                log(`[FAIL] Contract test: ${e}`);
+                setStatus(6, 'fail', `[FAIL] ${e.message}`);
+                return false;
+            }
+        }
+        
+        window.runTests = async function(subset) {
+            document.getElementById('output').textContent = '';
+            document.getElementById('runBtn').disabled = true;
+            
+            log('=== Ma-Dai-Shi E2E Test Suite ===\n');
+            
+            try {
+                await loadData();
+                
+                if (!subset || subset === 'wasm') {
+                    if (!await testWasm()) {
+                        if (subset === 'wasm') return;
+                        throw new Error('WASM test failed');
+                    }
+                    
+                    if (!await testEvaluation()) {
+                        if (subset === 'wasm') return;
+                        throw new Error('Evaluation test failed');
+                    }
+                    
+                    if (!await testWitnessGeneration()) {
+                        if (subset === 'wasm') return;
+                        throw new Error('Witness test failed');
+                    }
+                }
+                
+                if (!subset || subset === 'proof') {
+                    // Need witness for proof tests
+                    if (!testResults.witness) {
+                        await testWasm();
+                        await testEvaluation();
+                        await testWitnessGeneration();
+                    }
+                    
+                    if (!await testProofGeneration()) {
+                        if (subset === 'proof') return;
+                        throw new Error('Proof generation failed');
+                    }
+                    
+                    if (!await testLocalVerification()) {
+                        if (subset === 'proof') return;
+                        throw new Error('Local verification failed');
+                    }
+                }
+                
+                if (!subset || subset === 'contract') {
+                    // Need proof for contract test
+                    if (!testResults.proofHex) {
+                        log('Skipping contract test - no proof available');
+                        setStatus(6, 'fail', '[SKIP] Need proof first');
+                    } else {
+                        await testContractVerification();
+                    }
+                }
+                
+                log('\n=== Test Suite Complete ===');
+            } catch (e) {
+                log(`\n[ABORT] Test suite failed: ${e.message}`);
+            }
+            
+            document.getElementById('runBtn').disabled = false;
+        };
+    </script>
+</body>
+</html>
