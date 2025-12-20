@@ -16,8 +16,11 @@
 //!
 //! 4. **PRG (Pseudorandom Generator)** - For key stretching and mask generation.
 //!
-//! 5. **Small-Circuit iO** - Obfuscator for fixed, small gadget circuits
-//!    (treated as an assumption in this implementation).
+//! 5. **Small-Circuit iO** - Obfuscator for fixed, small gadget circuits.
+//!    Two backends available:
+//!    - `StubSmallObf` (default): XOR encryption placeholder, NOT true iO
+//!    - `CanonicalSmallObf` (`canonical-smallobf` feature): Information-theoretic iO
+//!      for 2-input boolean gates
 
 pub mod fhe;
 pub mod obf;
@@ -28,10 +31,14 @@ pub mod seh;
 pub use fhe::{DefaultFhe, FheCiphertext, FheParams, FheScheme, StubFhe};
 #[cfg(feature = "tfhe-backend")]
 pub use fhe::{TfheCiphertextWrapper, TfheFhe, TfhePublicKey, TfheSecretKey};
-pub use obf::{BytecodeProgram, GateGadget, ObfuscatedBytecode, SmallObf, StubSmallObf};
+pub use obf::{
+    decode_input_to_index, encode_index_as_input, BytecodeProgram, CanonicalSmallObf,
+    DefaultSmallObf, GateGadget, GeneralizedCanonicalSmallObf, ObfuscatedBytecode, SmallObf,
+    StubSmallObf, TruthTableObf,
+};
 pub use prf::{GgmPrf, MacPrf, PuncturablePrf, PuncturedKey, WirePrf};
 pub use prg::{Prg, Sha256Prg};
 pub use seh::{
-    CiphertextBytes, DefaultSeh, GenericSeh, MerklePath, SehDigest, SehOpening, SehParams,
-    SehProof, SehScheme, StubSeh, StubSehOpening,
+    CiphertextBytes, DefaultSeh, GenericSeh, MerklePath, SehDigest, SehKeyHierarchy, SehLevelKey,
+    SehOpening, SehParams, SehProof, SehRouting, SehScheme, StubSeh, StubSehOpening,
 };

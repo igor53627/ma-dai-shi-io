@@ -25,7 +25,7 @@ serde = { version = "1.0", optional = true }
 criterion = { version = "0.5", features = ["html_reports"] }
 
 [features]
-# Use stub FHE by default (fast compile, no real crypto)
+# Use stub backends by default (fast compile)
 default = ["stub-fhe"]
 
 # Stub FHE backend (development/testing)
@@ -33,6 +33,11 @@ stub-fhe = []
 
 # Real tfhe-based FHE backend; enables LWE-based encryption
 tfhe-backend = ["tfhe", "bincode", "serde"]
+
+# Canonical small-circuit iO for 2-input gates (information-theoretic iO)
+# Replaces StubSmallObf with CanonicalSmallObf which provides true iO
+# for the specific family of 2-input boolean gates used as gate gadgets
+canonical-smallobf = []
 
 [[example]]
 name = "integration_test"

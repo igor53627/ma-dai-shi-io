@@ -81,11 +81,13 @@
 
 pub mod circuit;
 pub mod crypto;
+pub mod hybrid;
 pub mod lio;
 pub mod padding;
 
 pub use circuit::{Circuit, ControlFunction, EquivalenceProof, Gate};
 pub use crypto::{FheScheme, PuncturablePrf, Prg, SehScheme, SmallObf};
+pub use hybrid::{DifferingGate, HybridObfuscatedLiO, HybridObfuscator, HybridSequenceStats};
 pub use lio::{LiO, LiOError, LiOParams, ObfuscatedLiO, WireLabels};
 pub use padding::{pad, pad_optimized, pad_single, PaddedCircuit, PaddingOverhead};
 

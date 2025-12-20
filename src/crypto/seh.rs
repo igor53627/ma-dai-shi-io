@@ -96,6 +96,94 @@ pub trait CiphertextBytes {
     fn to_bytes(&self) -> Vec<u8>;
 }
 
+// ============================================================================
+// Multi-Level Key Hierarchy (Ma-Dai-Shi Section 4.2)
+// ============================================================================
+
+/// A single level's FHE key pair in the SEH hierarchy
+///
+/// In Ma-Dai-Shi's construction, each tree level has its own key pair.
+/// Level 0 keys encrypt leaves, level h keys are for the root.
+#[derive(Clone, Debug)]
+pub struct SehLevelKey<F: FheScheme> {
+    /// Secret key for this level (used for extraction)
+    pub sk: F::SecretKey,
+    /// Public key for this level (used for encryption)
+    pub pk: F::PublicKey,
+}
+
+/// Multi-level key hierarchy for SEH
+///
+/// Stores independent FHE key pairs for each tree level, enabling
+/// the "somewhere extractable" property where extraction at one
+/// position doesn't reveal other positions.
+///
+/// ## Usage
+///
+/// ```ignore
+/// let seh = GenericSeh::<StubFhe>::default();
+/// let params = SehParams::default();
+/// let keys = seh.gen_key_hierarchy(&params);
+///
+/// // Use multi-key hash
+/// let (digest, cts) = seh.hash_multikey(&params, &keys, &values);
+/// ```
+#[derive(Clone, Debug)]
+pub struct SehKeyHierarchy<F: FheScheme> {
+    /// Key pairs per level: level 0 = leaves, level h = root
+    pub levels: Vec<SehLevelKey<F>>,
+}
+
+impl<F: FheScheme> SehKeyHierarchy<F> {
+    /// Get the number of levels in the hierarchy
+    pub fn height(&self) -> usize {
+        self.levels.len().saturating_sub(1)
+    }
+
+    /// Get the leaf-level (level 0) public key
+    pub fn leaf_pk(&self) -> Option<&F::PublicKey> {
+        self.levels.first().map(|k| &k.pk)
+    }
+
+    /// Get the root-level public key
+    pub fn root_pk(&self) -> Option<&F::PublicKey> {
+        self.levels.last().map(|k| &k.pk)
+    }
+}
+
+/// Routing ciphertexts for SEH extraction (placeholder for future use)
+///
+/// In the full Ma-Dai-Shi construction, routing ciphertexts contain
+/// encrypted decryption keys that allow an extractor to "follow" a
+/// path from root to leaf while keeping the path hidden.
+///
+/// ## Current Status
+///
+/// This is a placeholder structure. The current SEH implementation
+/// doesn't use routing for extraction - it's here to prepare for
+/// future full Ma-Dai-Shi compliance.
+#[derive(Clone, Debug)]
+pub struct SehRouting<F: FheScheme> {
+    /// Routing ciphertexts per level and node
+    /// routing[level][node_index] = encrypted key material for children
+    pub routing: Vec<Vec<Vec<F::Ciphertext>>>,
+}
+
+impl<F: FheScheme> Default for SehRouting<F> {
+    fn default() -> Self {
+        Self {
+            routing: Vec::new(),
+        }
+    }
+}
+
+impl<F: FheScheme> SehRouting<F> {
+    /// Check if routing data is populated
+    pub fn is_empty(&self) -> bool {
+        self.routing.is_empty()
+    }
+}
+
 impl CiphertextBytes for FheCiphertext {
     fn to_bytes(&self) -> Vec<u8> {
         self.data.clone()
@@ -176,8 +264,8 @@ impl<F: FheScheme> GenericSeh<F> {
         Self { fhe }
     }
 
-    #[allow(dead_code)]
-    fn compute_tree_height(num_elements: usize) -> usize {
+    /// Compute the height of a binary Merkle tree for n elements
+    pub fn compute_tree_height(num_elements: usize) -> usize {
         if num_elements <= 1 {
             return 0;
         }
@@ -218,6 +306,123 @@ impl<F: FheScheme> GenericSeh<F> {
         }
 
         layers
+    }
+
+    // ========================================================================
+    // Multi-Key Hierarchy Methods (Ma-Dai-Shi Section 4.2)
+    // ========================================================================
+
+    /// Generate a multi-level key hierarchy for SEH
+    ///
+    /// Creates independent FHE key pairs for each tree level (0 to height).
+    /// Level 0 is for leaves, higher levels are for internal nodes.
+    ///
+    /// This enables the "somewhere extractable" property from Ma-Dai-Shi
+    /// Section 4.2, where extraction at one position doesn't reveal others.
+    pub fn gen_key_hierarchy(&self, params: &SehParams) -> SehKeyHierarchy<F> {
+        let height = Self::compute_tree_height(params.num_elements);
+        let mut levels = Vec::with_capacity(height + 1);
+
+        for _ in 0..=height {
+            let (sk, pk) = self.fhe.keygen(&params.fhe_params);
+            levels.push(SehLevelKey { sk, pk });
+        }
+
+        SehKeyHierarchy { levels }
+    }
+
+    /// Hash values using a multi-level key hierarchy
+    ///
+    /// Uses the leaf-level key (level 0) for encrypting values.
+    /// The resulting digest and ciphertexts are compatible with the
+    /// standard `open`/`verify` methods.
+    ///
+    /// ## Difference from `hash()`
+    ///
+    /// - `hash()`: Generates a fresh single key pair internally
+    /// - `hash_multikey()`: Uses the provided key hierarchy
+    ///
+    /// This allows the caller to retain the key hierarchy for future
+    /// extraction operations (when implemented).
+    pub fn hash_multikey(
+        &self,
+        params: &SehParams,
+        keys: &SehKeyHierarchy<F>,
+        values: &[bool],
+    ) -> (SehDigest, Vec<F::Ciphertext>)
+    where
+        F::Ciphertext: CiphertextBytes,
+    {
+        let pk_leaf = keys
+            .leaf_pk()
+            .expect("key hierarchy must have at least one level");
+
+        let ciphertexts: Vec<F::Ciphertext> = values
+            .iter()
+            .map(|&v| self.fhe.encrypt_bit(pk_leaf, v))
+            .collect();
+
+        self.hash_from_ciphertexts(&ciphertexts)
+    }
+
+    /// Hash values with multi-key hierarchy and routing data (placeholder)
+    ///
+    /// This prepares for full Ma-Dai-Shi SEH compliance by returning
+    /// routing ciphertexts alongside the digest. Currently, the routing
+    /// structure is empty - it will be populated when extraction is implemented.
+    pub fn hash_multikey_with_routing(
+        &self,
+        params: &SehParams,
+        keys: &SehKeyHierarchy<F>,
+        values: &[bool],
+    ) -> (SehDigest, Vec<F::Ciphertext>, SehRouting<F>)
+    where
+        F::Ciphertext: CiphertextBytes,
+    {
+        let (digest, ciphertexts) = self.hash_multikey(params, keys, values);
+
+        let routing = SehRouting::default();
+
+        (digest, ciphertexts, routing)
+    }
+
+    /// Build digest from pre-encrypted ciphertexts
+    ///
+    /// Internal helper that builds the Merkle tree from ciphertexts
+    /// without generating new keys.
+    fn hash_from_ciphertexts(&self, ciphertexts: &[F::Ciphertext]) -> (SehDigest, Vec<F::Ciphertext>)
+    where
+        F::Ciphertext: CiphertextBytes,
+    {
+        let leaf_hashes: Vec<[u8; 32]> = ciphertexts
+            .iter()
+            .map(|ct| {
+                let mut hasher = Sha256::new();
+                hasher.update(&ct.to_bytes());
+                hasher.finalize().into()
+            })
+            .collect();
+
+        let padded_len = leaf_hashes.len().next_power_of_two();
+        let mut padded_leaves = leaf_hashes;
+        padded_leaves.resize(padded_len, [0u8; 32]);
+
+        let tree = Self::build_tree(&padded_leaves);
+        let root = tree
+            .last()
+            .and_then(|l| l.first())
+            .copied()
+            .unwrap_or([0u8; 32]);
+        let height = tree.len().saturating_sub(1);
+
+        (
+            SehDigest {
+                root,
+                height,
+                tree_layers: tree,
+            },
+            ciphertexts.to_vec(),
+        )
     }
 }
 
@@ -665,5 +870,114 @@ mod tests {
 
         assert_eq!(proof.prefix_len, 4);
         assert_ne!(proof.prefix_subtree_hash, [0u8; 32]);
+    }
+
+    // ========================================================================
+    // Multi-Key Hierarchy Tests (Issue #8)
+    // ========================================================================
+
+    #[test]
+    fn test_gen_key_hierarchy_creates_correct_levels() {
+        let seh = StubSeh::default();
+        let params = SehParams {
+            num_elements: 8,
+            ..Default::default()
+        };
+
+        let keys = seh.gen_key_hierarchy(&params);
+
+        let expected_height = GenericSeh::<StubFhe>::compute_tree_height(8);
+        assert_eq!(keys.levels.len(), expected_height + 1);
+        assert_eq!(keys.height(), expected_height);
+    }
+
+    #[test]
+    fn test_key_hierarchy_accessors() {
+        let seh = StubSeh::default();
+        let params = SehParams {
+            num_elements: 4,
+            ..Default::default()
+        };
+
+        let keys = seh.gen_key_hierarchy(&params);
+
+        assert!(keys.leaf_pk().is_some());
+        assert!(keys.root_pk().is_some());
+    }
+
+    #[test]
+    fn test_hash_multikey_produces_valid_digest() {
+        let seh = StubSeh::default();
+        let params = SehParams::default();
+        let values = vec![true, false, true, false];
+
+        let keys = seh.gen_key_hierarchy(&params);
+        let (digest, ciphertexts) = seh.hash_multikey(&params, &keys, &values);
+
+        assert!(!digest.tree_layers.is_empty());
+        assert_eq!(ciphertexts.len(), values.len());
+
+        for pos in 0..values.len() {
+            let opening = SehScheme::open(&seh, &params, &values, &ciphertexts, pos);
+            assert!(SehScheme::verify(&seh, &params, &digest, &opening));
+        }
+    }
+
+    #[test]
+    fn test_hash_multikey_with_routing_returns_empty_routing() {
+        let seh = StubSeh::default();
+        let params = SehParams::default();
+        let values = vec![true, false, true, false];
+
+        let keys = seh.gen_key_hierarchy(&params);
+        let (digest, ciphertexts, routing) = seh.hash_multikey_with_routing(&params, &keys, &values);
+
+        assert!(routing.is_empty());
+        assert_eq!(ciphertexts.len(), values.len());
+        assert!(!digest.tree_layers.is_empty());
+    }
+
+    #[test]
+    fn test_multikey_digest_matches_standard_structure() {
+        let seh = StubSeh::default();
+        let params = SehParams::default();
+        let values = vec![true, false, true, false];
+
+        let keys = seh.gen_key_hierarchy(&params);
+        let (multikey_digest, _) = seh.hash_multikey(&params, &keys, &values);
+
+        assert_eq!(
+            multikey_digest.tree_layers.last().unwrap()[0],
+            multikey_digest.root
+        );
+    }
+
+    #[test]
+    fn test_multikey_same_hierarchy_same_values_same_digest() {
+        let seh = StubSeh::default();
+        let params = SehParams::default();
+        let values = vec![true, false, true, false];
+
+        let keys = seh.gen_key_hierarchy(&params);
+
+        let (digest1, _) = seh.hash_multikey(&params, &keys, &values);
+        let (digest2, _) = seh.hash_multikey(&params, &keys, &values);
+
+        assert_eq!(digest1.root, digest2.root);
+    }
+
+    #[test]
+    fn test_multikey_different_values_different_digest() {
+        let seh = StubSeh::default();
+        let params = SehParams::default();
+        let values1 = vec![true, false, true, false];
+        let values2 = vec![false, true, false, true];
+
+        let keys = seh.gen_key_hierarchy(&params);
+
+        let (digest1, _) = seh.hash_multikey(&params, &keys, &values1);
+        let (digest2, _) = seh.hash_multikey(&params, &keys, &values2);
+
+        assert_ne!(digest1.root, digest2.root);
     }
 }

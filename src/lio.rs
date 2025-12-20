@@ -22,18 +22,18 @@
 //! - PRG (for mask generation)
 //! - Small-circuit iO (for gate gadgets)
 //!
-//! # Implementation Status (Milestone 3)
+//! # Implementation Status
 //!
 //! **This implementation provides:**
 //!
 //! - [OK] Functional correctness: `ObfuscatedLiO::evaluate(x) == Circuit::evaluate(x)`
 //! - [OK] Real GGM-based PRF and SHA-256 PRG
 //! - [OK] Proper wire labels: two random λ-bit (32-byte) labels per wire (L_i^0, L_i^1)
-//! - [OK] MAC verification during evaluation (panics on tampered tables)
+//! - [OK] MAC verification during evaluation (returns error on tampered tables)
 //! - [OK] SEH fully integrated with verify_seh(), evaluate_with_seh_check(), consistency proofs
 //! - [OK] SmallObf integrated per-gate (each gate has obfuscated gadget)
 //! - [OK] PRF puncturing helper (prf_input_for_entry) for security analysis
-//! - [!] SmallObf uses stub encryption (NOT real iO - treated as assumption)
+//! - [OK] CanonicalSmallObf: True iO for 2-input gates (`canonical-smallobf` feature)
 //!
 //! ## What's Real vs. Stub
 //!
@@ -45,14 +45,15 @@
 //! | Wire encryption | Real | PRF-masked output labels keyed by input labels |
 //! | MAC tags | Real | Generated AND verified during evaluation |
 //! | SEH | Real | Verification, openings, consistency proofs all functional |
-//! | SmallObf | Structural | Per-gate obfuscated gadget (stub iO, explicit assumption) |
+//! | SmallObf (default) | Stub | XOR encryption placeholder, NOT true iO |
+//! | SmallObf (canonical) | Real | Information-theoretic iO for 2-input gates |
 //! | PRF puncturing | Real | prf_input_for_entry() exposes exact security mapping |
 
 use crate::circuit::{Circuit, Gate};
 use crate::circuit::ControlFunction;
 use crate::crypto::{
-    DefaultSeh, FheCiphertext, GgmPrf, MacPrf, ObfuscatedBytecode, PuncturablePrf, Prg, SehDigest,
-    SehOpening, SehParams, SehProof, SehScheme, Sha256Prg, SmallObf, StubSmallObf, WirePrf,
+    DefaultSeh, DefaultSmallObf, FheCiphertext, GgmPrf, MacPrf, ObfuscatedBytecode, PuncturablePrf,
+    Prg, SehDigest, SehOpening, SehParams, SehProof, SehScheme, Sha256Prg, SmallObf, WirePrf,
 };
 use rand::RngCore;
 
@@ -115,7 +116,7 @@ impl WireLabels {
 }
 
 /// Convert bytes to a vector of bools for PRF input
-fn bytes_to_bools(bytes: &[u8]) -> Vec<bool> {
+pub fn bytes_to_bools(bytes: &[u8]) -> Vec<bool> {
     bytes
         .iter()
         .flat_map(|byte| (0..8).rev().map(move |bit| (byte >> bit) & 1 == 1))
@@ -123,7 +124,7 @@ fn bytes_to_bools(bytes: &[u8]) -> Vec<bool> {
 }
 
 /// Convert ControlFunction to GateGadget gate type constant
-fn control_function_to_gate_type(cf: &ControlFunction) -> u8 {
+pub fn control_function_to_gate_type(cf: &ControlFunction) -> u8 {
     use crate::crypto::GateGadget;
     match cf {
         ControlFunction::F => GateGadget::FALSE,
@@ -179,7 +180,7 @@ impl ObfuscatedGate {
             gate.output_wire as usize,
         );
 
-        let small_obf = StubSmallObf::default();
+        let small_obf = DefaultSmallObf::default();
         let bytecode = gadget.to_bytecode_program();
         let gadget_obf = small_obf.obfuscate(&bytecode);
 
@@ -481,7 +482,7 @@ pub struct LiO {
     seh: DefaultSeh,
     /// Small-circuit obfuscator
     #[allow(dead_code)]
-    small_obf: StubSmallObf,
+    small_obf: DefaultSmallObf,
 }
 
 impl LiO {
@@ -490,7 +491,7 @@ impl LiO {
         let wire_prf = GgmPrf::new(params.prf_depth);
         let mac_prf = GgmPrf::new(params.prf_depth);
         let seh = DefaultSeh::default();
-        let small_obf = StubSmallObf;
+        let small_obf = DefaultSmallObf::default();
 
         Self {
             params,

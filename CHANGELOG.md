@@ -6,6 +6,75 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Generalized Truth-Table iO for Bounded-Input Circuits
+- Extended small-circuit iO from 2-input gates to circuits with up to 16 input bits
+- Added `GeneralizedCanonicalSmallObf`: Information-theoretic iO for bounded-input circuits
+  - Configurable `max_input_bits` (default: 12, max practical: 16)
+  - Computes canonical truth table by exhaustive evaluation
+  - Equivalent circuits produce identical obfuscations (perfect iO)
+- Added `TruthTableObf` struct for variable-size truth tables:
+  - Stores 2^n rows for n-bit inputs
+  - Supports multi-byte outputs
+  - `get_output(index)` for table lookup
+- Added helper functions:
+  - `encode_index_as_input(index, n_bits)`: Convert index to input bytes
+  - `decode_input_to_index(input, n_bits)`: Convert input bytes to index
+  - `BytecodeProgram::eval_plain()`: Evaluate without encryption
+- Measured practical bounds (Apple M-series):
+  | Bits | Table Size | Obfuscation Time | Recommendation |
+  |------|------------|------------------|----------------|
+  | 8    | 256 B      | ~10 us           | Instant        |
+  | 16   | 64 KB      | ~2 ms            | Default        |
+  | 24   | 16 MB      | ~450 ms          | Practical max  |
+  | 32   | 4 GB       | ~2 min           | Hard limit     |
+- Constructor helpers: `fast()`, `practical_max()`, `hard_limit()`
+- Added `examples/find_limit.rs` benchmark
+- Added 13 new tests for generalized truth-table iO
+- Total: 90 tests pass
+
+### Canonical Small-Circuit iO (Issue #11)
+- **Issue #11**: Replaced StubSmallObf with real small-circuit iO candidate
+  - Added `CanonicalSmallObf`: Information-theoretic iO for 2-input boolean gates
+  - For the function family F = { f : {0,1}^2 -> {0,1} }, obfuscation produces canonical truth tables
+  - Equivalent programs produce identical obfuscations (perfect iO for this finite family)
+  - Added `DefaultSmallObf` type alias with feature flag pattern (like DefaultFhe/DefaultSeh)
+  - New feature: `canonical-smallobf` - enables true iO for gate gadgets
+  - LiO and HybridObfuscator now use `DefaultSmallObf` for backend flexibility
+  - Added `CanonicalSmallObf::extract_truth_table()` helper for inspection
+- Updated security documentation in `obf.rs` and `lio.rs`:
+  - Clarified security model for stub vs canonical backends
+  - Documented that general small-circuit iO remains an open problem
+  - Added warnings about scope limitations (only valid for 2-input gates)
+- Added 7 new tests for CanonicalSmallObf
+
+### Hybrid Security Experiments (Issue #12)
+- **Issue #12**: Implemented hybrid security experiments using PRF puncturing
+  - Added `src/hybrid.rs` module with full hybrid sequence implementation
+  - `DifferingGate::find()`: Identifies gates that differ between two circuits
+  - `HybridObfuscator::create_hybrid()`: Creates obfuscation at hybrid index k
+  - `HybridObfuscator::create_hybrid_sequence()`: Generates full hybrid chain
+  - `HybridObfuscatedGate::new_punctured()`: Uses punctured PRF keys for differing entries
+  - `HybridSequenceStats`: Analyzes hybrid sequence for security analysis
+- Demonstrates Ma-Dai-Shi Theorem 1 security reduction:
+  - Adjacent hybrids differ by exactly one table entry
+  - Punctured entry replaced with true randomness (indistinguishable by PRF security)
+  - Security loss: O(4s * eps_PRF) for s differing gates
+- Added 10 new tests for hybrid security experiments
+- Made `bytes_to_bools()` and `control_function_to_gate_type()` public in lio.rs
+
+### Multi-Key FHE for SEH (Issue #8)
+- **Issue #8**: Added multi-level key hierarchy for Ma-Dai-Shi Section 4.2 compliance
+  - `SehLevelKey<F>`: Single level's FHE key pair (sk, pk)
+  - `SehKeyHierarchy<F>`: Multi-level key hierarchy (level 0 = leaves, level h = root)
+  - `SehRouting<F>`: Placeholder for future routing ciphertexts (extraction)
+  - `GenericSeh::gen_key_hierarchy()`: Generate independent keys per tree level
+  - `GenericSeh::hash_multikey()`: Hash using level-specific keys
+  - `GenericSeh::hash_multikey_with_routing()`: Prepare for full Ma-Dai-Shi extraction
+  - `GenericSeh::compute_tree_height()`: Now public for external use
+- New exports: `SehKeyHierarchy`, `SehLevelKey`, `SehRouting`
+- Added 7 new tests for multi-key SEH
+- Total: 70 tests pass
+
 ### SEH Prefix Consistency Proofs (Issue #13)
 - **Issue #13**: Strengthened SEH prefix consistency proofs with real Merkle paths
   - `SehDigest` now stores full `tree_layers` for proof generation
