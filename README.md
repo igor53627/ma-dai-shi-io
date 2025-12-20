@@ -4,6 +4,12 @@ Quasi-linear indistinguishability obfuscation (iO).
 
 Implementation of the construction from ["Quasi-Linear Indistinguishability Obfuscation via Mathematical Proofs of Equivalence and Applications"](https://eprint.iacr.org/2025/307) (Ma, Dai, Shi 2025).
 
+| Component | Status |
+|-----------|--------|
+| Rust Implementation | Core library |
+| Lean 4 Formalization | [OK] 0 sorries, 2 axioms |
+| Honeypot Demo | WASM + zkSNARK |
+
 ## What is iO?
 
 **Indistinguishability Obfuscation** transforms a program into an equivalent program that:
@@ -23,13 +29,15 @@ If two circuits compute the same function, their obfuscations are computationall
 
 ```
 ma-dai-shi-io/
-├── src/lib.rs           # Core iO implementation
+├── src/lib.rs           # Core iO implementation (Rust)
+├── lean/                # Formal verification (Lean 4 + mathlib)
+│   └── MaDaiShi/        # Circuit, SEquivalence, Padding, LocalIO, Security
 ├── examples/            # Integration tests
 └── honeypot-demo/       # Full demo application
     ├── circuits-medium/ # Noir zkSNARK circuits
     ├── contracts/       # Solidity verifier contracts
-    ├── wasm/           # Browser-based evaluator
-    └── web/            # Interactive demo UI
+    ├── wasm/            # Browser-based evaluator
+    └── web/             # Interactive demo UI
 ```
 
 ## Quick Start
@@ -120,7 +128,25 @@ cargo build --release
 
 # Run integration example
 cargo run --example integration_test
+
+# Build Lean formalization
+cd lean && lake build
 ```
+
+## Lean Formalization
+
+The `lean/` directory contains a complete Lean 4 formalization of the paper's core theorems.
+
+**Status:** 0 sorries, 2 well-documented axioms
+
+| Theorem | File |
+|---------|------|
+| Main Theorem (Theorem 1) | Security.lean |
+| Hybrid chain indistinguishability | Security.lean |
+| Padding preserves functionality | Padding.lean |
+| s-equivalence properties | SEquivalence.lean |
+
+See [lean/README.md](lean/README.md) for details.
 
 ## References
 
