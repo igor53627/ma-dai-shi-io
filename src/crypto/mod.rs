@@ -32,6 +32,6 @@ pub use obf::{BytecodeProgram, GateGadget, ObfuscatedBytecode, SmallObf, StubSma
 pub use prf::{GgmPrf, MacPrf, PuncturablePrf, PuncturedKey, WirePrf};
 pub use prg::{Prg, Sha256Prg};
 pub use seh::{
-    CiphertextBytes, DefaultSeh, GenericSeh, SehDigest, SehOpening, SehParams, SehProof,
-    SehScheme, StubSeh, StubSehOpening,
+    CiphertextBytes, DefaultSeh, GenericSeh, MerklePath, SehDigest, SehOpening, SehParams,
+    SehProof, SehScheme, StubSeh, StubSehOpening,
 };

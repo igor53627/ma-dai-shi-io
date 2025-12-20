@@ -43,13 +43,16 @@ impl Default for SehParams {
     }
 }
 
-/// SEH digest (root hash)
+/// SEH digest (root hash with internal tree structure)
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SehDigest {
     /// Root hash value
     pub root: [u8; 32],
     /// Height of the Merkle tree
     pub height: usize,
+    /// Internal Merkle tree layers (layer 0 = leaves, last = root)
+    /// Stored for prefix consistency proofs
+    pub tree_layers: Vec<Vec<[u8; 32]>>,
 }
 
 /// SEH opening for a specific position (generic over ciphertext type)
@@ -63,13 +66,29 @@ pub struct SehOpening<Ct: Clone + Debug> {
     pub sibling_hashes: Vec<[u8; 32]>,
 }
 
+/// Merkle authentication path for a single position
+#[derive(Clone, Debug)]
+pub struct MerklePath {
+    /// Position this path authenticates
+    pub position: usize,
+    /// Sibling hashes from leaf to root
+    pub siblings: Vec<[u8; 32]>,
+}
+
 /// SEH prefix consistency proof
+///
+/// Proves that two SEH digests share the same values for positions 0..prefix_len.
+/// Uses Merkle paths to demonstrate that the subtrees covering the prefix are identical.
 #[derive(Clone, Debug)]
 pub struct SehProof {
-    /// Common prefix nodes
-    pub common_nodes: Vec<[u8; 32]>,
-    /// Depth at which the proofs diverge
-    pub diverge_depth: usize,
+    /// Length of the shared prefix
+    pub prefix_len: usize,
+    /// Hash of the subtree covering the prefix (should match in both trees)
+    pub prefix_subtree_hash: [u8; 32],
+    /// Merkle path from prefix subtree to root in digest1
+    pub path_to_root1: Vec<[u8; 32]>,
+    /// Merkle path from prefix subtree to root in digest2
+    pub path_to_root2: Vec<[u8; 32]>,
 }
 
 /// Trait for converting ciphertexts to bytes for hashing
@@ -240,7 +259,14 @@ where
             .unwrap_or([0u8; 32]);
         let height = tree.len().saturating_sub(1);
 
-        (SehDigest { root, height }, ciphertexts)
+        (
+            SehDigest {
+                root,
+                height,
+                tree_layers: tree,
+            },
+            ciphertexts,
+        )
     }
 
     fn open(
@@ -324,9 +350,74 @@ where
         digest2: &SehDigest,
         prefix_len: usize,
     ) -> SehProof {
+        if prefix_len == 0 || digest1.tree_layers.is_empty() || digest2.tree_layers.is_empty() {
+            return SehProof {
+                prefix_len: 0,
+                prefix_subtree_hash: [0u8; 32],
+                path_to_root1: vec![],
+                path_to_root2: vec![],
+            };
+        }
+
+        // Find the level where prefix_len leaves form a complete subtree
+        // For a prefix of length n, we need to find the smallest subtree containing positions 0..n
+        let prefix_len_padded = prefix_len.next_power_of_two();
+        let subtree_level = (prefix_len_padded as f64).log2().ceil() as usize;
+
+        // Get the hash of the prefix subtree from both trees
+        // At level `subtree_level`, the first node covers positions 0..prefix_len_padded
+        let prefix_hash1 = digest1
+            .tree_layers
+            .get(subtree_level)
+            .and_then(|layer| layer.first())
+            .copied()
+            .unwrap_or([0u8; 32]);
+
+        let _prefix_hash2 = digest2
+            .tree_layers
+            .get(subtree_level)
+            .and_then(|layer| layer.first())
+            .copied()
+            .unwrap_or([0u8; 32]);
+
+        // If prefix subtrees don't match, the proof will fail verification
+        // We still generate it - verification will catch the mismatch
+
+        // Collect sibling path from subtree level to root for digest1
+        let mut path1 = Vec::new();
+        let mut idx = 0usize; // We're at position 0 of the subtree level
+        for level in subtree_level..digest1.height {
+            let sibling_idx = if idx % 2 == 0 { idx + 1 } else { idx - 1 };
+            let sibling = digest1
+                .tree_layers
+                .get(level)
+                .and_then(|layer| layer.get(sibling_idx))
+                .copied()
+                .unwrap_or([0u8; 32]);
+            path1.push(sibling);
+            idx /= 2;
+        }
+
+        // Collect sibling path from subtree level to root for digest2
+        let mut path2 = Vec::new();
+        idx = 0;
+        for level in subtree_level..digest2.height {
+            let sibling_idx = if idx % 2 == 0 { idx + 1 } else { idx - 1 };
+            let sibling = digest2
+                .tree_layers
+                .get(level)
+                .and_then(|layer| layer.get(sibling_idx))
+                .copied()
+                .unwrap_or([0u8; 32]);
+            path2.push(sibling);
+            idx /= 2;
+        }
+
         SehProof {
-            common_nodes: vec![digest1.root, digest2.root],
-            diverge_depth: prefix_len,
+            prefix_len,
+            prefix_subtree_hash: prefix_hash1,
+            path_to_root1: path1,
+            path_to_root2: path2,
         }
     }
 
@@ -337,9 +428,62 @@ where
         digest2: &SehDigest,
         proof: &SehProof,
     ) -> bool {
-        proof.common_nodes.len() == 2
-            && proof.common_nodes[0] == digest1.root
-            && proof.common_nodes[1] == digest2.root
+        if proof.prefix_len == 0 {
+            return true; // Empty prefix is trivially consistent
+        }
+
+        // Verify that the prefix subtree hash, combined with path1, produces digest1.root
+        let mut current = proof.prefix_subtree_hash;
+        let mut idx = 0usize;
+        for sibling in &proof.path_to_root1 {
+            current = if idx % 2 == 0 {
+                Self::hash_pair(&current, sibling)
+            } else {
+                Self::hash_pair(sibling, &current)
+            };
+            idx /= 2;
+        }
+        if current != digest1.root {
+            return false;
+        }
+
+        // Verify that the same prefix subtree hash, combined with path2, produces digest2.root
+        current = proof.prefix_subtree_hash;
+        idx = 0;
+        for sibling in &proof.path_to_root2 {
+            current = if idx % 2 == 0 {
+                Self::hash_pair(&current, sibling)
+            } else {
+                Self::hash_pair(sibling, &current)
+            };
+            idx /= 2;
+        }
+        if current != digest2.root {
+            return false;
+        }
+
+        // Also verify the prefix subtree hash matches what's stored in both digests
+        let prefix_len_padded = proof.prefix_len.next_power_of_two();
+        let subtree_level = (prefix_len_padded as f64).log2().ceil() as usize;
+
+        let stored_hash1 = digest1
+            .tree_layers
+            .get(subtree_level)
+            .and_then(|layer| layer.first())
+            .copied();
+
+        let stored_hash2 = digest2
+            .tree_layers
+            .get(subtree_level)
+            .and_then(|layer| layer.first())
+            .copied();
+
+        match (stored_hash1, stored_hash2) {
+            (Some(h1), Some(h2)) => {
+                h1 == proof.prefix_subtree_hash && h2 == proof.prefix_subtree_hash
+            }
+            _ => false,
+        }
     }
 }
 
@@ -412,5 +556,114 @@ mod tests {
         let (digest, ciphertexts) = SehScheme::hash(&seh, &params, &values);
         let opening = SehScheme::open(&seh, &params, &values, &ciphertexts, 0);
         assert!(SehScheme::verify(&seh, &params, &digest, &opening));
+    }
+
+    #[test]
+    fn test_seh_digest_stores_tree_layers() {
+        let seh = StubSeh::default();
+        let params = SehParams::default();
+        let values = vec![true, false, true, false];
+
+        let (digest, _) = SehScheme::hash(&seh, &params, &values);
+
+        assert!(!digest.tree_layers.is_empty());
+        assert_eq!(digest.tree_layers.last().unwrap().len(), 1);
+        assert_eq!(digest.tree_layers.last().unwrap()[0], digest.root);
+    }
+
+    #[test]
+    fn test_seh_prefix_consistency_same_values() {
+        let seh = StubSeh::default();
+        let params = SehParams::default();
+        let values = vec![true, false, true, false];
+
+        let (digest1, _) = SehScheme::hash(&seh, &params, &values);
+        let (digest2, _) = SehScheme::hash(&seh, &params, &values);
+
+        let proof = SehScheme::consis_prove(&seh, &params, &digest1, &digest2, 4);
+        assert!(SehScheme::consis_verify(&seh, &params, &digest1, &digest2, &proof));
+    }
+
+    #[test]
+    fn test_seh_prefix_consistency_shared_prefix() {
+        let seh = StubSeh::default();
+        let params = SehParams {
+            num_elements: 8,
+            ..Default::default()
+        };
+
+        // Two sequences that share the first 4 values
+        let values1 = vec![true, false, true, false, true, true, false, false];
+        let values2 = vec![true, false, true, false, false, false, true, true];
+
+        let (digest1, _) = SehScheme::hash(&seh, &params, &values1);
+        let (digest2, _) = SehScheme::hash(&seh, &params, &values2);
+
+        // Prove consistency for prefix of length 4
+        let proof = SehScheme::consis_prove(&seh, &params, &digest1, &digest2, 4);
+
+        // Verification should succeed because prefix subtrees match
+        assert!(SehScheme::consis_verify(
+            &seh, &params, &digest1, &digest2, &proof
+        ));
+    }
+
+    #[test]
+    fn test_seh_prefix_consistency_different_prefix() {
+        let seh = StubSeh::default();
+        let params = SehParams {
+            num_elements: 8,
+            ..Default::default()
+        };
+
+        // Two sequences with different first value
+        let values1 = vec![true, false, true, false, true, true, false, false];
+        let values2 = vec![false, false, true, false, true, true, false, false];
+
+        let (digest1, _) = SehScheme::hash(&seh, &params, &values1);
+        let (digest2, _) = SehScheme::hash(&seh, &params, &values2);
+
+        // Prove consistency for prefix of length 4 (but values differ)
+        let proof = SehScheme::consis_prove(&seh, &params, &digest1, &digest2, 4);
+
+        // Verification should fail because prefix subtrees don't match
+        assert!(!SehScheme::consis_verify(
+            &seh, &params, &digest1, &digest2, &proof
+        ));
+    }
+
+    #[test]
+    fn test_seh_prefix_consistency_empty() {
+        let seh = StubSeh::default();
+        let params = SehParams::default();
+        let values1 = vec![true, false, true, false];
+        let values2 = vec![false, true, false, true];
+
+        let (digest1, _) = SehScheme::hash(&seh, &params, &values1);
+        let (digest2, _) = SehScheme::hash(&seh, &params, &values2);
+
+        // Empty prefix should always be consistent
+        let proof = SehScheme::consis_prove(&seh, &params, &digest1, &digest2, 0);
+        assert!(SehScheme::consis_verify(
+            &seh, &params, &digest1, &digest2, &proof
+        ));
+    }
+
+    #[test]
+    fn test_seh_proof_contains_merkle_paths() {
+        let seh = StubSeh::default();
+        let params = SehParams {
+            num_elements: 8,
+            ..Default::default()
+        };
+        let values = vec![true, false, true, false, true, true, false, false];
+
+        let (digest1, _) = SehScheme::hash(&seh, &params, &values);
+        let (digest2, _) = SehScheme::hash(&seh, &params, &values);
+
+        let proof = SehScheme::consis_prove(&seh, &params, &digest1, &digest2, 4);
+
+        assert_eq!(proof.prefix_len, 4);
+        assert_ne!(proof.prefix_subtree_hash, [0u8; 32]);
     }
 }

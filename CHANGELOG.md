@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### SEH Prefix Consistency Proofs (Issue #13)
+- **Issue #13**: Strengthened SEH prefix consistency proofs with real Merkle paths
+  - `SehDigest` now stores full `tree_layers` for proof generation
+  - `SehProof` redesigned with proper structure:
+    - `prefix_len`: Length of shared prefix
+    - `prefix_subtree_hash`: Hash of subtree covering the prefix
+    - `path_to_root1/2`: Merkle paths from subtree to each root
+  - Added `MerklePath` struct for authentication paths
+  - `consis_prove()`: Generates real Merkle path proofs
+  - `consis_verify()`: Verifies paths reconstruct to both roots
+  - Correctly detects when prefixes differ (verification fails)
+- Added 6 new prefix consistency tests:
+  - `test_seh_digest_stores_tree_layers`
+  - `test_seh_prefix_consistency_same_values`
+  - `test_seh_prefix_consistency_shared_prefix`
+  - `test_seh_prefix_consistency_different_prefix`
+  - `test_seh_prefix_consistency_empty`
+  - `test_seh_proof_contains_merkle_paths`
+- Total: 53 tests pass
+
 ### Error Handling, Wire Indices & Benchmarks (Milestone 4)
 - **Issue #15**: Changed `evaluate()` to return `Result<_, LiOError>` instead of panicking
   - Added `LiOError::MacVerificationFailed { gate_index, table_index }` variant
