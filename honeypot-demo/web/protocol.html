@@ -777,8 +777,12 @@
         <div class="section">
             <h2><span class="num">1</span> Obfuscation Pipeline</h2>
             <div class="key-property">
-                <strong>Goal:</strong> Transform a circuit into an opaque program that computes the same function 
-                but reveals nothing about its implementation.
+                <strong>Goal:</strong> Transform a circuit into an obfuscated program that computes the same function,
+                where obfuscations of equivalent circuits are <strong>computationally indistinguishable</strong> (iO).
+            </div>
+            <div class="key-property" style="background: rgba(34, 197, 94, 0.1); border-color: var(--success);">
+                <strong>Formally verified:</strong> The core theorem (LiO + Pad = full iO) is proven in Lean 4 with 0 sorries. 
+                <a href="https://github.com/igor53627/ma-dai-shi-io/tree/main/lean" style="color: var(--success);">See lean/</a>
             </div>
             
             <div class="stepper" id="stepper">
@@ -863,8 +867,8 @@
         <div class="section">
             <h2><span class="num">3</span> Indistinguishability Game</h2>
             <div class="key-property">
-                <strong>iO Guarantee:</strong> If two circuits compute the same function, 
-                their obfuscations are computationally indistinguishable. 
+                <strong>iO Guarantee:</strong> If two circuits compute the same function 
+                (formally: s-equivalent after padding), their obfuscations are <strong>computationally indistinguishable</strong>. 
                 No efficient attacker can tell which original circuit was used.
             </div>
             
@@ -1101,6 +1105,7 @@
                         <li>Real honeypot: 128 bits from 12 BIP-39 words</li>
                     </ul>
                     <p style="margin-top: 0.5rem; color: var(--warning);">Problem: Anyone can see the circuit and extract the secret!</p>
+                    <p style="margin-top: 0.5rem; font-size: 0.7rem; color: #666;"><strong>Lean 4:</strong> Circuits modeled as DAGs in Circuit.lean</p>
                 `
             },
             // Step 1: Branching Program
@@ -1214,12 +1219,13 @@
                     <p>The final <strong>obfuscated program</strong>.</p>
                     <ul>
                         <li>Computes the exact same function as original circuit</li>
-                        <li>Reveals nothing about implementation</li>
-                        <li>Can be evaluated but not reverse-engineered</li>
+                        <li>Obfuscations of equivalent circuits are <strong>computationally indistinguishable</strong></li>
+                        <li>Can be evaluated but computationally hard to reverse-engineer</li>
                     </ul>
                     <p style="margin-top: 0.5rem; color: var(--success);">
-                        Ready to deploy! Users can run it but can't extract the secret seed.
+                        Ready to deploy! No efficient attacker can extract the secret seed.
                     </p>
+                    <p style="margin-top: 0.5rem; font-size: 0.7rem; color: #666;"><strong>Lean 4:</strong> main_theorem in Security.lean proves LiO + Pad = full iO</p>
                 `
             }
         ];
