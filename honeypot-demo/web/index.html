@@ -311,7 +311,7 @@
     
     <script type="module">
         // Import WASM module
-        import init, { evaluate_seed, batch_evaluate, generate_witness } from './pkg/honeypot_wasm.js';
+        import init, { evaluate_seed, batch_evaluate, generate_witness, generate_noir_witness, compute_program_hash } from './pkg/honeypot_wasm.js';
         
         let wasmReady = false;
         let obfProg = null;
@@ -348,24 +348,34 @@
         }
         
         async function loadHoneypotInfo() {
-            // In production, fetch from Ethereum
-            document.getElementById('prize').textContent = '1.337 ETH';
-            document.getElementById('progHash').textContent = 
-                'Program hash: 0x7a3b...f92e (Ma-Dai-Shi ObfProg)';
-            document.getElementById('contract').textContent = 
-                'Contract: 0x1234...5678 (Sepolia)';
+            // Load obfuscated program from local JSON
+            try {
+                const resp = await fetch('./data/obf_prog.json');
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                obfProg = await resp.json();
+                
+                const hash = obfProg.simple_hash || 'unknown';
+                document.getElementById('progHash').textContent = 
+                    `Program hash: ${hash} (simple_hash, ${obfProg.bp_matrices.length} steps)`;
+                
+                log(`Loaded ObfProg: ${obfProg.bp_matrices.length} matrices, hash=${hash}`);
+            } catch (e) {
+                log(`Failed to load obf_prog.json: ${e}, using mock`, 'error');
+                obfProg = generateMockObfProg();
+            }
             
-            // Load obfuscated program from IPFS/server
-            // obfProg = await fetch('/api/obfprog').then(r => r.json());
-            obfProg = generateMockObfProg(); // Demo only
+            // Demo values (in production, fetch from Ethereum contract)
+            document.getElementById('prize').textContent = '1.337 ETH';
+            document.getElementById('contract').textContent = 
+                'Contract: 0x1234...5678 (Sepolia testnet - demo only)';
             
             log('Loaded honeypot info');
         }
         
-        // Generate mock ObfProg for demo
+        // Fallback mock ObfProg
         function generateMockObfProg() {
             const matrices = [];
-            for (let i = 0; i < 128; i++) {
+            for (let i = 0; i < 16; i++) {
                 const m = [];
                 for (let r = 0; r < 5; r++) {
                     const row = [];
@@ -379,7 +389,8 @@
             return {
                 hash: new Array(32).fill(0),
                 bp_matrices: matrices,
-                input_bits: 128
+                input_bits: 16,
+                simple_hash: 136
             };
         }
         
@@ -505,23 +516,37 @@
         window.claimPrize = async function() {
             if (!foundSeed) return;
             
-            log('Generating zkSNARK proof...');
+            log('Generating Noir witness...');
             document.getElementById('claimBtn').disabled = true;
             
             try {
-                // Generate witness
-                const witness = await generate_witness(obfProg, foundSeed);
-                log('Witness generated');
+                // Generate Noir-compatible witness
+                const noirWitness = await generate_noir_witness(obfProg, foundSeed);
+                log(`Noir witness generated (hash: ${noirWitness.obf_prog_hash})`);
                 
-                // Call Noir prover (would use bb.js in production)
-                // const proof = await noirProver.prove(witness);
+                // Display witness for manual proving (until bb.js integration)
+                console.log('Noir witness:', JSON.stringify(noirWitness, null, 2));
                 
-                // Submit to contract
+                // TODO: Integrate bb.js for browser-based proof generation
+                // const { Noir } = await import('@noir-lang/noir_js');
+                // const { UltraHonkBackend } = await import('@aztec/bb.js');
+                // const circuit = await fetch('./data/honeypot_medium.json').then(r => r.json());
+                // const backend = new UltraHonkBackend(circuit.bytecode);
+                // const noir = new Noir(circuit);
+                // const { witness } = await noir.execute(noirWitness);
+                // const proof = await backend.generateProof(witness);
+                
+                // TODO: Submit proof to contract
+                // const { ethers } = await import('https://esm.sh/ethers@6');
+                // const provider = new ethers.BrowserProvider(window.ethereum);
+                // const signer = await provider.getSigner();
+                // const contract = new ethers.Contract(HONEYPOT_ADDRESS, HONEYPOT_ABI, signer);
                 // await contract.claim(proof);
                 
-                log('Proof generated - connect wallet to claim!', 'success');
+                log('Witness ready - bb.js integration pending', 'success');
+                log('Check console for witness JSON to use with CLI', 'success');
             } catch (e) {
-                log(`Proof generation failed: ${e}`, 'error');
+                log(`Witness generation failed: ${e}`, 'error');
             }
             
             document.getElementById('claimBtn').disabled = false;

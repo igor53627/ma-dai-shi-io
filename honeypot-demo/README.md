@@ -26,7 +26,7 @@ Seed phrase honeypot using Ma-Dai-Shi iO with zkSNARK verification.
 ## Structure
 
 ```
-honeypot-noir/
+honeypot-demo/
 ├── circuits/           # Full circuit (128 BP steps, ~128k constraints)
 ├── circuits-medium/    # Medium circuit (16 BP steps, ~18k constraints) [OK]
 ├── circuits-minimal/   # Minimal test circuit (~19 constraints) [OK]
@@ -34,9 +34,18 @@ honeypot-noir/
 │   ├── HoneypotContract.sol    # Main honeypot logic
 │   └── HoneypotVerifier.sol    # Generated UltraHonk verifier
 ├── wasm/               # Ma-Dai-Shi WASM build
+│   └── src/lib.rs              # evaluate_seed, generate_noir_witness, etc.
 ├── web/                # Browser UI
-│   └── data/bip39-english.txt  # BIP-39 wordlist
-└── scripts/            # Setup & test scripts
+│   ├── data/
+│   │   ├── bip39-english.txt   # BIP-39 wordlist (2048 words)
+│   │   └── obf_prog.json       # Generated obfuscated program
+│   ├── index.html              # Main honeypot UI
+│   ├── protocol.html           # Protocol visualization
+│   └── pkg/                    # WASM build output
+└── scripts/
+    ├── generate_obf_prog.py    # Generate ObfuscatedProgram JSON
+    ├── generate_prover_toml.py # Generate Noir test inputs
+    └── setup.sh                # Initial setup
 ```
 
 ## Quick Start
@@ -79,7 +88,29 @@ The web UI lets you:
 - Enter 12 BIP-39 words and evaluate against the obfuscated program
 - Generate random seed phrases for testing  
 - Batch brute-force (demo only - 2^128 entropy is infeasible)
-- Generate zkSNARK proof when valid seed found
+- Generate Noir witness when valid seed found (console output for CLI proving)
+
+## WASM API
+
+| Function | Description |
+|----------|-------------|
+| `evaluate_seed(obfProg, seedIndices)` | Evaluate seed phrase, returns `{is_valid, output, time_ms}` |
+| `batch_evaluate(obfProg, seeds)` | Batch evaluation, returns array of valid indices |
+| `generate_witness(obfProg, seed)` | Generate witness with BP trace (legacy) |
+| `generate_noir_witness(obfProg, seed)` | Generate Noir-compatible witness JSON |
+| `compute_program_hash(obfProg)` | Compute simple_hash matching Noir circuit |
+
+## Hash Alignment
+
+The `simple_hash` commitment scheme is consistent across all components:
+
+```
+Noir:   acc += arr[i * 25] * (i + 1) for i in 0..steps
+WASM:   acc += mat[0][0] * (i + 1) for each matrix
+Python: acc += mat[0][0] * (i + 1) for each matrix
+```
+
+For 16 identity matrices: `hash = 1*1 + 1*2 + ... + 1*16 = 136`
 
 ## Circuit Variants
 

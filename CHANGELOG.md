@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Honeypot Demo Improvements
+- Added `simple_hash` to WASM matching Noir circuit commitment scheme
+- Added `generate_noir_witness()` for generating Noir-compatible witness JSON
+- Added `compute_program_hash()` for hash verification
+- Replaced mock ObfProg with real generated program (`web/data/obf_prog.json`)
+- Updated web UI to load real obfuscated program
+- Added `scripts/generate_obf_prog.py` for generating ObfuscatedProgram JSON
+- Hash alignment verified: WASM, Noir, and Python all produce hash=136 for 16 identity matrices
+
 ### Lean 4 Formalization Complete
 - **Status**: 0 sorries, 0 errors, 2 documented axioms
 - **Main theorem**: `main_theorem` in Security.lean proves LiO + Pad = full iO

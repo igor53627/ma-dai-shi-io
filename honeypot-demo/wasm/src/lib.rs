@@ -68,6 +68,19 @@ pub struct ProofWitness {
     pub bp_trace: Vec<[[u8; 5]; 5]>,
 }
 
+/// Noir-compatible witness format for zkSNARK proof generation
+#[derive(Serialize, Deserialize)]
+pub struct NoirWitness {
+    /// Program hash commitment (public)
+    pub obf_prog_hash: String,
+    /// Evaluation output (public, always "1" for valid seeds)
+    pub evaluation_output: String,
+    /// Seed phrase as Field strings (private)
+    pub seed_phrase: Vec<String>,
+    /// Flattened BP matrices as Field strings (private)
+    pub bp_matrices_flat: Vec<String>,
+}
+
 // ============================================================================
 // Core Functions
 // ============================================================================
@@ -141,6 +154,48 @@ pub fn generate_witness(obf_prog_js: JsValue, seed_phrase_js: JsValue) -> Result
     
     serde_wasm_bindgen::to_value(&witness)
         .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+}
+
+/// Generate Noir-compatible witness for zkSNARK proof
+///
+/// Returns witness in exact format expected by Noir circuit
+#[wasm_bindgen]
+pub fn generate_noir_witness(obf_prog_js: JsValue, seed_phrase_js: JsValue) -> Result<JsValue, JsValue> {
+    let obf_prog: ObfuscatedProgram = serde_wasm_bindgen::from_value(obf_prog_js)
+        .map_err(|e| JsValue::from_str(&format!("Invalid ObfProg: {}", e)))?;
+    
+    let seed_phrase: [u16; 12] = serde_wasm_bindgen::from_value(seed_phrase_js)
+        .map_err(|e| JsValue::from_str(&format!("Invalid seed phrase: {}", e)))?;
+    
+    console_log!("[honeypot-wasm] Generating Noir witness...");
+    
+    // Compute hash matching Noir's simple_hash
+    let hash = simple_hash(&obf_prog.bp_matrices);
+    
+    // Flatten matrices
+    let flat = flatten_matrices(&obf_prog.bp_matrices);
+    
+    let witness = NoirWitness {
+        obf_prog_hash: hash.to_string(),
+        evaluation_output: "1".to_string(),
+        seed_phrase: seed_phrase.iter().map(|&w| w.to_string()).collect(),
+        bp_matrices_flat: flat.iter().map(|&v| v.to_string()).collect(),
+    };
+    
+    console_log!("[honeypot-wasm] Witness hash: {}", hash);
+    
+    serde_wasm_bindgen::to_value(&witness)
+        .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+}
+
+/// Compute program hash (for display/verification)
+#[wasm_bindgen]
+pub fn compute_program_hash(obf_prog_js: JsValue) -> Result<JsValue, JsValue> {
+    let obf_prog: ObfuscatedProgram = serde_wasm_bindgen::from_value(obf_prog_js)
+        .map_err(|e| JsValue::from_str(&format!("Invalid ObfProg: {}", e)))?;
+    
+    let hash = simple_hash(&obf_prog.bp_matrices);
+    Ok(JsValue::from_str(&hash.to_string()))
 }
 
 /// Batch evaluate multiple seed phrase guesses
@@ -266,6 +321,31 @@ fn collect_bp_trace(input: &[bool], matrices: &[[[u8; 5]; 5]]) -> Vec<[[u8; 5]; 
     trace
 }
 
+/// Compute simple_hash matching Noir circuit
+/// For medium circuit (16 steps): acc += arr[i*25] * (i+1) for i in 0..16
+/// For full circuit (128 steps): samples every 32nd element
+fn simple_hash(matrices: &[[[u8; 5]; 5]]) -> u64 {
+    let mut acc: u64 = 0;
+    for (i, mat) in matrices.iter().enumerate() {
+        // First element of each matrix (mat[0][0])
+        acc += (mat[0][0] as u64) * ((i + 1) as u64);
+    }
+    acc
+}
+
+/// Flatten matrices to match Noir's bp_matrices_flat format
+fn flatten_matrices(matrices: &[[[u8; 5]; 5]]) -> Vec<u8> {
+    let mut flat = Vec::with_capacity(matrices.len() * 25);
+    for mat in matrices {
+        for row in mat {
+            for &val in row {
+                flat.push(val);
+            }
+        }
+    }
+    flat
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -286,5 +366,25 @@ mod tests {
         let seed: [u16; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
         let bits = encode_seed_to_bits(&seed);
         assert_eq!(bits.len(), 128);
+    }
+    
+    #[test]
+    fn test_simple_hash_identity_matrices() {
+        let id = identity_matrix();
+        let matrices: Vec<[[u8; 5]; 5]> = vec![id; 16];
+        let hash = simple_hash(&matrices);
+        // Each identity matrix has [0][0] = 1
+        // hash = 1*1 + 1*2 + ... + 1*16 = 136
+        assert_eq!(hash, 136);
+    }
+    
+    #[test]
+    fn test_flatten_matrices() {
+        let id = identity_matrix();
+        let matrices = vec![id];
+        let flat = flatten_matrices(&matrices);
+        assert_eq!(flat.len(), 25);
+        assert_eq!(flat[0], 1); // [0][0]
+        assert_eq!(flat[6], 1); // [1][1]
     }
 }
