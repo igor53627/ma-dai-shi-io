@@ -10,10 +10,19 @@ import {
   custom, 
   http,
   parseEther,
-  formatEther
+  formatEther,
+  defineChain
 } from 'viem';
-import { sepolia } from 'viem/chains';
 import { config } from './config.js';
+
+const tenderlyTestnet = defineChain({
+  id: config.chainId,
+  name: 'Tenderly Virtual Testnet',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: { http: [config.rpcUrl] },
+  },
+});
 
 // Contract ABI (minimal for honeypot)
 const HONEYPOT_ABI = [
@@ -66,7 +75,7 @@ export async function initEthereum(options = {}) {
   
   // Create public client for reading
   publicClient = createPublicClient({
-    chain: sepolia,
+    chain: tenderlyTestnet,
     transport: rpcUrl ? http(rpcUrl) : custom(window.ethereum),
   });
   
@@ -97,7 +106,7 @@ export async function connectWallet() {
   // Create wallet client for signing
   walletClient = createWalletClient({
     account,
-    chain: sepolia,
+    chain: tenderlyTestnet,
     transport: custom(window.ethereum),
   });
   
