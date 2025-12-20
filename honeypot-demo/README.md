@@ -74,14 +74,19 @@ bb write_solidity_verifier -k target/vk/vk --output_path target/HoneypotVerifier
 ## Web Demo
 
 ```bash
-# Build WASM module
+# Build WASM evaluator
 cd wasm
 wasm-pack build --target web --out-dir ../web/pkg
 
-# Serve the web app
+# Install dependencies and start dev server
 cd ../web
-python3 -m http.server 8080
+npm install
+npm run dev
 # Open http://localhost:8080 in browser
+
+# Or build for production
+npm run build
+# Serve dist/ folder
 ```
 
 The web UI lets you:

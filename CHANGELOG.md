@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Updated web UI to load real obfuscated program
 - Added `scripts/generate_obf_prog.py` for generating ObfuscatedProgram JSON
 - Hash alignment verified: WASM, Noir, and Python all produce hash=136 for 16 identity matrices
+- Added Vite build system for web app (ESNext target, WASM support)
+- Integrated @aztec/bb.js and @noir-lang/noir_js for browser-based proof generation
+- Added UltraHonkBackend for zkSNARK proof generation
+- Modularized web app into src/app.js and src/noir-prover.js
 
 ### Lean 4 Formalization Complete
 - **Status**: 0 sorries, 0 errors, 2 documented axioms

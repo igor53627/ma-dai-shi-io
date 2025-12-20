@@ -1,0 +1,20 @@
+{
+  "name": "honeypot-web",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@aztec/bb.js": "0.84.0",
+    "@noir-lang/noir_js": "1.0.0-beta.6",
+    "@noir-lang/noirc_abi": "1.0.0-beta.6",
+    "@noir-lang/acvm_js": "1.0.0-beta.6",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}
