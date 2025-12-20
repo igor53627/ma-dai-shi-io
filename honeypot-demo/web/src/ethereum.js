@@ -13,6 +13,7 @@ import {
   formatEther
 } from 'viem';
 import { sepolia } from 'viem/chains';
+import { config } from './config.js';
 
 // Contract ABI (minimal for honeypot)
 const HONEYPOT_ABI = [
@@ -49,15 +50,7 @@ const HONEYPOT_ABI = [
 let publicClient = null;
 let walletClient = null;
 let account = null;
-let contractAddress = null;
-
-// Configuration - can be set via environment or runtime
-const config = {
-  // Default to Tenderly fork RPC (set via env or runtime)
-  rpcUrl: import.meta.env.VITE_RPC_URL || null,
-  contractAddress: import.meta.env.VITE_HONEYPOT_ADDRESS || null,
-  chainId: parseInt(import.meta.env.VITE_CHAIN_ID || '11155111'), // Sepolia default
-};
+let contractAddress = config.honeypotAddress;
 
 /**
  * Initialize the Ethereum client
@@ -65,7 +58,7 @@ const config = {
  */
 export async function initEthereum(options = {}) {
   const rpcUrl = options.rpcUrl || config.rpcUrl;
-  contractAddress = options.contractAddress || config.contractAddress;
+  contractAddress = options.contractAddress || config.honeypotAddress;
   
   if (!rpcUrl) {
     console.log('[ethereum] No RPC URL configured, using browser provider');

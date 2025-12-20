@@ -47,6 +47,7 @@ contract SeedPhraseHoneypot {
     constructor(bytes32 _obfProgHash, address _verifier) payable {
         require(_obfProgHash != bytes32(0), "Invalid program hash");
         require(_verifier != address(0), "Invalid verifier");
+        require(_verifier.code.length > 0, "Verifier has no code");
         require(msg.value > 0, "Must fund honeypot");
         
         obfProgHash = _obfProgHash;
@@ -142,6 +143,8 @@ contract HoneypotFactory {
     address[] public honeypots;
     
     constructor(address _verifier) {
+        require(_verifier != address(0), "Invalid verifier");
+        require(_verifier.code.length > 0, "Verifier has no code");
         verifier = _verifier;
     }
     

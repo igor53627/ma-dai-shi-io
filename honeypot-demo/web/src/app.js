@@ -76,6 +76,9 @@ export async function initialize() {
       await initEthereum();
       ethereumReady = true;
       log('Ethereum ready');
+      
+      // Verify obfProgHash matches on-chain
+      await verifyOnchainHash();
     } catch (e) {
       log(`Ethereum init skipped: ${e.message}`);
     }
@@ -137,6 +140,34 @@ async function loadCircuit() {
   } catch (e) {
     log(`Failed to load circuit: ${e}`, 'error');
     log('Proof generation will be unavailable', 'error');
+  }
+}
+
+async function verifyOnchainHash() {
+  try {
+    if (!ethereumReady || !obfProg) return;
+    
+    const info = await getHoneypotInfo();
+    const onchainHash = info.obfProgHash;
+    
+    // Compute local hash from obfProg using WASM
+    const localHashNum = obfProg.simple_hash;
+    // Convert to bytes32 format (pad to 32 bytes)
+    const localHashHex = '0x' + localHashNum.toString(16).padStart(64, '0');
+    
+    log(`Local hash: ${localHashHex}`);
+    log(`On-chain hash: ${onchainHash}`);
+    
+    if (localHashHex.toLowerCase() === onchainHash.toLowerCase()) {
+      log('obfProgHash verified against contract', 'success');
+    } else {
+      log('[ERROR] obfProgHash MISMATCH - proofs may be rejected!', 'error');
+      // Disable claim button to prevent invalid proofs
+      const claimBtn = $('claimBtn');
+      if (claimBtn) claimBtn.disabled = true;
+    }
+  } catch (e) {
+    log(`Failed to verify on-chain hash: ${e.message}`, 'error');
   }
 }
 

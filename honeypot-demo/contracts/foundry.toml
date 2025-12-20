@@ -1,0 +1,11 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.27"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 1        # Optimize for size, not gas
+via_ir = false            # via_ir causes stack-too-deep; deploy to local anvil with --code-size-limit
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
