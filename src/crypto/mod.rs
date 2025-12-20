@@ -25,8 +25,13 @@ pub mod prf;
 pub mod prg;
 pub mod seh;
 
-pub use fhe::{FheCiphertext, FheParams, FheScheme, StubFhe};
-pub use obf::{SmallObf, StubSmallObf};
+pub use fhe::{DefaultFhe, FheCiphertext, FheParams, FheScheme, StubFhe};
+#[cfg(feature = "tfhe-backend")]
+pub use fhe::{TfheCiphertextWrapper, TfheFhe, TfhePublicKey, TfheSecretKey};
+pub use obf::{BytecodeProgram, GateGadget, ObfuscatedBytecode, SmallObf, StubSmallObf};
 pub use prf::{GgmPrf, MacPrf, PuncturablePrf, PuncturedKey, WirePrf};
 pub use prg::{Prg, Sha256Prg};
-pub use seh::{SehDigest, SehOpening, SehParams, SehProof, SehScheme, StubSeh};
+pub use seh::{
+    CiphertextBytes, DefaultSeh, GenericSeh, SehDigest, SehOpening, SehParams, SehProof,
+    SehScheme, StubSeh, StubSehOpening,
+};

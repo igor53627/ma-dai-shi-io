@@ -139,6 +139,24 @@ impl SmallObf for StubSmallObf {
                 let xor_result = input.iter().fold(0u8, |acc, &b| acc ^ b);
                 vec![xor_result]
             }
+            Some(op) if (op & 0xF0) == 0x10 => {
+                let gate_type = op & 0x0F;
+                let b = input.first().copied().unwrap_or(0);
+                let a = (b & 0x01) != 0;
+                let c = (b & 0x02) != 0;
+                let out = match gate_type {
+                    GateGadget::AND => a && c,
+                    GateGadget::XOR => a ^ c,
+                    GateGadget::OR => a || c,
+                    GateGadget::NAND => !(a && c),
+                    GateGadget::NOR => !(a || c),
+                    GateGadget::XNOR => !(a ^ c),
+                    GateGadget::ANDNOT => a && !c,
+                    GateGadget::FALSE => false,
+                    _ => false,
+                };
+                vec![out as u8]
+            }
             _ => vec![0u8; obf.output_size],
         }
     }
@@ -167,6 +185,10 @@ impl GateGadget {
     pub const XOR: u8 = 1;
     pub const OR: u8 = 2;
     pub const NAND: u8 = 3;
+    pub const NOR: u8 = 4;
+    pub const XNOR: u8 = 5;
+    pub const ANDNOT: u8 = 6;
+    pub const FALSE: u8 = 7;
 
     /// Create a new gate gadget
     pub fn new(gate_type: u8, input_wires: (usize, usize), output_wire: usize) -> Self {
@@ -184,7 +206,24 @@ impl GateGadget {
             Self::XOR => a ^ b,
             Self::OR => a || b,
             Self::NAND => !(a && b),
+            Self::NOR => !(a || b),
+            Self::XNOR => !(a ^ b),
+            Self::ANDNOT => a && !b,
+            Self::FALSE => false,
             _ => false,
+        }
+    }
+
+    /// Convert the gate gadget to a bytecode program for SmallObf
+    ///
+    /// The bytecode format uses opcode 0x10 | gate_type to identify gate operations.
+    /// Input: 1 byte where bit 0 = a, bit 1 = b
+    /// Output: 1 byte where bit 0 = result
+    pub fn to_bytecode_program(&self) -> BytecodeProgram {
+        BytecodeProgram {
+            instructions: vec![0x10 | self.gate_type],
+            input_size: 1,
+            output_size: 1,
         }
     }
 }
@@ -226,5 +265,39 @@ mod tests {
         let xor_gate = GateGadget::new(GateGadget::XOR, (0, 1), 2);
         assert!(xor_gate.evaluate(true, false));
         assert!(!xor_gate.evaluate(true, true));
+    }
+
+    #[test]
+    fn test_gate_gadget_to_bytecode_and_eval() {
+        let obf = StubSmallObf;
+
+        for gate_type in [
+            GateGadget::AND,
+            GateGadget::XOR,
+            GateGadget::OR,
+            GateGadget::NAND,
+            GateGadget::NOR,
+            GateGadget::XNOR,
+        ] {
+            let gadget = GateGadget::new(gate_type, (0, 1), 2);
+            let bytecode = gadget.to_bytecode_program();
+            let obfuscated = obf.obfuscate(&bytecode);
+
+            for a in [false, true] {
+                for b in [false, true] {
+                    let packed = (a as u8) | ((b as u8) << 1);
+                    let out = obf.eval(&obfuscated, &[packed]);
+                    let expected = gadget.evaluate(a, b);
+                    assert_eq!(
+                        (out[0] & 1) == 1,
+                        expected,
+                        "Gate type {} failed for ({}, {})",
+                        gate_type,
+                        a,
+                        b
+                    );
+                }
+            }
+        }
     }
 }

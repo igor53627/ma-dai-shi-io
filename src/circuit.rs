@@ -2,11 +2,10 @@
 //!
 //! Defines the core circuit abstractions used throughout the obfuscation pipeline.
 //!
-//! # Wire Index Limitation
+//! # Wire Index Type
 //!
-//! **Note:** Wire indices are stored as `u8`, limiting circuits to a maximum of
-//! 256 wires. This is sufficient for the current demo/testing purposes but would
-//! need to be upgraded to `u16` or `usize` for production use with larger circuits.
+//! Wire indices are stored as `u16`, supporting circuits up to 65,536 wires.
+//! This balances memory efficiency with practical circuit sizes.
 
 use rand::Rng;
 
@@ -65,18 +64,18 @@ impl ControlFunction {
 #[derive(Clone, Debug)]
 pub struct Gate {
     /// Wire index where output is written
-    pub output_wire: u8,
+    pub output_wire: u16,
     /// First input wire index
-    pub input_wire_a: u8,
+    pub input_wire_a: u16,
     /// Second input wire index
-    pub input_wire_b: u8,
+    pub input_wire_b: u16,
     /// The boolean function computed by this gate
     pub control_function: ControlFunction,
 }
 
 impl Gate {
     /// Create a new gate
-    pub fn new(output: u8, a: u8, b: u8, func: ControlFunction) -> Self {
+    pub fn new(output: u16, a: u16, b: u16, func: ControlFunction) -> Self {
         Self {
             output_wire: output,
             input_wire_a: a,
@@ -137,9 +136,9 @@ impl Circuit {
         ];
         let gates: Vec<Gate> = (0..num_gates)
             .map(|_| {
-                let out = rng.gen_range(0..num_wires) as u8;
-                let a = rng.gen_range(0..num_wires) as u8;
-                let b = rng.gen_range(0..num_wires) as u8;
+                let out = rng.gen_range(0..num_wires) as u16;
+                let a = rng.gen_range(0..num_wires) as u16;
+                let b = rng.gen_range(0..num_wires) as u16;
                 let func = funcs[rng.gen_range(0..funcs.len())];
                 Gate::new(out, a, b, func)
             })
@@ -241,5 +240,18 @@ mod tests {
         let circuit = Circuit::random_r57(8, 10);
         assert_eq!(circuit.gates.len(), 10);
         assert_eq!(circuit.num_wires, 8);
+    }
+
+    #[test]
+    fn test_large_circuit_over_256_wires() {
+        let num_wires = 300;
+        let circuit = Circuit::random_r57(num_wires, 20);
+        assert_eq!(circuit.num_wires, num_wires);
+
+        for gate in &circuit.gates {
+            assert!(gate.output_wire < num_wires as u16);
+            assert!(gate.input_wire_a < num_wires as u16);
+            assert!(gate.input_wire_b < num_wires as u16);
+        }
     }
 }

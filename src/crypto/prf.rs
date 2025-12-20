@@ -151,7 +151,9 @@ impl PuncturablePrf for GgmPrf {
             }
         }
 
-        let diverge_idx = diverge_idx?;
+        // Safe: we already returned None if padded == punctured_point,
+        // so there must be a divergence point
+        let diverge_idx = diverge_idx.expect("divergence point must exist");
 
         let mut current = pkey.sibling_seeds[diverge_idx];
 

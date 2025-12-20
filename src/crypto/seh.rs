@@ -11,9 +11,16 @@
 //! ## Security
 //!
 //! Relies on LWE-based FHE for the "somewhere extractable" property.
+//!
+//! ## Genericity
+//!
+//! SEH is generic over the FHE scheme via `SehScheme<F: FheScheme>`.
+//! The default implementation uses `DefaultFhe` which switches between
+//! `StubFhe` (fast, insecure) and `TfheFhe` (real LWE) based on cargo features.
 
-use super::fhe::{FheCiphertext, FheParams, FheScheme, StubFhe};
+use super::fhe::{DefaultFhe, FheCiphertext, FheParams, FheScheme, StubFhe};
 use sha2::{Digest, Sha256};
+use std::fmt::Debug;
 
 /// SEH parameters
 #[derive(Clone, Debug)]
@@ -45,13 +52,13 @@ pub struct SehDigest {
     pub height: usize,
 }
 
-/// SEH opening for a specific position
+/// SEH opening for a specific position (generic over ciphertext type)
 #[derive(Clone, Debug)]
-pub struct SehOpening {
+pub struct SehOpening<Ct: Clone + Debug> {
     /// Position being opened
     pub position: usize,
     /// Leaf value (FHE ciphertext of the element)
-    pub leaf_ciphertext: FheCiphertext,
+    pub leaf_ciphertext: Ct,
     /// Sibling hashes along the path to the root
     pub sibling_hashes: Vec<[u8; 32]>,
 }
@@ -65,28 +72,51 @@ pub struct SehProof {
     pub diverge_depth: usize,
 }
 
-/// Trait for Somewhere Extractable Hash schemes
-pub trait SehScheme: Clone {
-    /// FHE scheme used for ciphertext leaves
-    type Fhe: FheScheme;
+/// Trait for converting ciphertexts to bytes for hashing
+pub trait CiphertextBytes {
+    fn to_bytes(&self) -> Vec<u8>;
+}
 
+impl CiphertextBytes for FheCiphertext {
+    fn to_bytes(&self) -> Vec<u8> {
+        self.data.clone()
+    }
+}
+
+#[cfg(feature = "tfhe-backend")]
+impl CiphertextBytes for super::fhe::TfheCiphertextWrapper {
+    fn to_bytes(&self) -> Vec<u8> {
+        bincode::serialize(&self.0).expect("tfhe ciphertext serialization failed")
+    }
+}
+
+/// Trait for Somewhere Extractable Hash schemes (generic over FHE)
+pub trait SehScheme<F: FheScheme>: Clone
+where
+    F::Ciphertext: CiphertextBytes,
+{
     /// Generate SEH parameters
     fn gen(&self, params: &SehParams) -> SehParams;
 
     /// Hash a sequence of boolean values
-    fn hash(&self, params: &SehParams, values: &[bool]) -> (SehDigest, Vec<FheCiphertext>);
+    fn hash(&self, params: &SehParams, values: &[bool]) -> (SehDigest, Vec<F::Ciphertext>);
 
     /// Open the hash at a specific position
     fn open(
         &self,
         params: &SehParams,
         values: &[bool],
-        ciphertexts: &[FheCiphertext],
+        ciphertexts: &[F::Ciphertext],
         position: usize,
-    ) -> SehOpening;
+    ) -> SehOpening<F::Ciphertext>;
 
     /// Verify an opening against a digest
-    fn verify(&self, params: &SehParams, digest: &SehDigest, opening: &SehOpening) -> bool;
+    fn verify(
+        &self,
+        params: &SehParams,
+        digest: &SehDigest,
+        opening: &SehOpening<F::Ciphertext>,
+    ) -> bool;
 
     /// Create a prefix consistency proof between two digests
     fn consis_prove(
@@ -107,24 +137,24 @@ pub trait SehScheme: Clone {
     ) -> bool;
 }
 
-/// Stub SEH implementation using simple Merkle tree
+/// Generic SEH implementation using Merkle tree over FHE ciphertexts
 ///
-/// WARNING: This is a simplified implementation for development.
-/// A production version would use FHE ciphertexts at leaves.
+/// This implementation works with any FHE backend that implements `FheScheme`
+/// and whose ciphertexts implement `CiphertextBytes`.
 #[derive(Clone, Debug)]
-pub struct StubSeh {
-    fhe: StubFhe,
+pub struct GenericSeh<F: FheScheme> {
+    fhe: F,
 }
 
-impl Default for StubSeh {
+impl<F: FheScheme + Default> Default for GenericSeh<F> {
     fn default() -> Self {
-        Self::new()
+        Self::new(F::default())
     }
 }
 
-impl StubSeh {
-    pub fn new() -> Self {
-        Self { fhe: StubFhe }
+impl<F: FheScheme> GenericSeh<F> {
+    pub fn new(fhe: F) -> Self {
+        Self { fhe }
     }
 
     #[allow(dead_code)]
@@ -148,7 +178,7 @@ impl StubSeh {
         hasher.finalize().into()
     }
 
-    fn build_tree(&self, leaves: &[[u8; 32]]) -> Vec<Vec<[u8; 32]>> {
+    fn build_tree(leaves: &[[u8; 32]]) -> Vec<Vec<[u8; 32]>> {
         let mut layers = vec![leaves.to_vec()];
 
         while layers.last().map(|l| l.len()).unwrap_or(0) > 1 {
@@ -172,17 +202,19 @@ impl StubSeh {
     }
 }
 
-impl SehScheme for StubSeh {
-    type Fhe = StubFhe;
-
+impl<F> SehScheme<F> for GenericSeh<F>
+where
+    F: FheScheme + Clone,
+    F::Ciphertext: CiphertextBytes,
+{
     fn gen(&self, params: &SehParams) -> SehParams {
         params.clone()
     }
 
-    fn hash(&self, params: &SehParams, values: &[bool]) -> (SehDigest, Vec<FheCiphertext>) {
+    fn hash(&self, params: &SehParams, values: &[bool]) -> (SehDigest, Vec<F::Ciphertext>) {
         let (_, pk) = self.fhe.keygen(&params.fhe_params);
 
-        let ciphertexts: Vec<FheCiphertext> = values
+        let ciphertexts: Vec<F::Ciphertext> = values
             .iter()
             .map(|&v| self.fhe.encrypt_bit(&pk, v))
             .collect();
@@ -191,7 +223,7 @@ impl SehScheme for StubSeh {
             .iter()
             .map(|ct| {
                 let mut hasher = Sha256::new();
-                hasher.update(&ct.data);
+                hasher.update(&ct.to_bytes());
                 hasher.finalize().into()
             })
             .collect();
@@ -200,8 +232,12 @@ impl SehScheme for StubSeh {
         let mut padded_leaves = leaf_hashes;
         padded_leaves.resize(padded_len, [0u8; 32]);
 
-        let tree = self.build_tree(&padded_leaves);
-        let root = tree.last().and_then(|l| l.first()).copied().unwrap_or([0u8; 32]);
+        let tree = Self::build_tree(&padded_leaves);
+        let root = tree
+            .last()
+            .and_then(|l| l.first())
+            .copied()
+            .unwrap_or([0u8; 32]);
         let height = tree.len().saturating_sub(1);
 
         (SehDigest { root, height }, ciphertexts)
@@ -211,14 +247,14 @@ impl SehScheme for StubSeh {
         &self,
         params: &SehParams,
         _values: &[bool],
-        ciphertexts: &[FheCiphertext],
+        ciphertexts: &[F::Ciphertext],
         position: usize,
-    ) -> SehOpening {
+    ) -> SehOpening<F::Ciphertext> {
         let leaf_hashes: Vec<[u8; 32]> = ciphertexts
             .iter()
             .map(|ct| {
                 let mut hasher = Sha256::new();
-                hasher.update(&ct.data);
+                hasher.update(&ct.to_bytes());
                 hasher.finalize().into()
             })
             .collect();
@@ -227,7 +263,7 @@ impl SehScheme for StubSeh {
         let mut padded_leaves = leaf_hashes;
         padded_leaves.resize(padded_len, [0u8; 32]);
 
-        let tree = self.build_tree(&padded_leaves);
+        let tree = Self::build_tree(&padded_leaves);
 
         let mut sibling_hashes = Vec::new();
         let mut idx = position;
@@ -239,10 +275,16 @@ impl SehScheme for StubSeh {
             idx /= 2;
         }
 
-        let leaf_ct = ciphertexts.get(position).cloned().unwrap_or_else(|| {
-            let (_, pk) = self.fhe.keygen(&params.fhe_params);
-            self.fhe.encrypt_bit(&pk, false)
-        });
+        let leaf_ct = ciphertexts
+            .get(position)
+            .cloned()
+            .unwrap_or_else(|| {
+                panic!(
+                    "SEH open: position {} out of bounds (len={})",
+                    position,
+                    ciphertexts.len()
+                )
+            });
 
         SehOpening {
             position,
@@ -251,9 +293,14 @@ impl SehScheme for StubSeh {
         }
     }
 
-    fn verify(&self, _params: &SehParams, digest: &SehDigest, opening: &SehOpening) -> bool {
+    fn verify(
+        &self,
+        _params: &SehParams,
+        digest: &SehDigest,
+        opening: &SehOpening<F::Ciphertext>,
+    ) -> bool {
         let mut hasher = Sha256::new();
-        hasher.update(&opening.leaf_ciphertext.data);
+        hasher.update(&opening.leaf_ciphertext.to_bytes());
         let mut current: [u8; 32] = hasher.finalize().into();
 
         let mut idx = opening.position;
@@ -296,47 +343,74 @@ impl SehScheme for StubSeh {
     }
 }
 
+/// Type alias for SEH using the stub FHE backend (backward compatible)
+pub type StubSeh = GenericSeh<StubFhe>;
+
+/// Type alias for SEH using the default FHE backend
+pub type DefaultSeh = GenericSeh<DefaultFhe>;
+
+/// Legacy SehOpening type alias for backward compatibility
+pub type StubSehOpening = SehOpening<FheCiphertext>;
+
+impl StubSeh {
+    #[deprecated(note = "Use GenericSeh::new(StubFhe) or StubSeh::default() instead")]
+    pub fn new_legacy() -> Self {
+        Self::new(StubFhe)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_seh_hash_deterministic() {
-        let seh = StubSeh::new();
+        let seh = StubSeh::default();
         let params = SehParams::default();
         let values = vec![true, false, true, false];
 
-        let (digest1, _) = seh.hash(&params, &values);
-        let (digest2, _) = seh.hash(&params, &values);
+        let (digest1, _) = SehScheme::hash(&seh, &params, &values);
+        let (digest2, _) = SehScheme::hash(&seh, &params, &values);
 
         assert_eq!(digest1.root, digest2.root);
     }
 
     #[test]
     fn test_seh_open_verify() {
-        let seh = StubSeh::new();
+        let seh = StubSeh::default();
         let params = SehParams::default();
         let values = vec![true, false, true, false];
 
-        let (digest, ciphertexts) = seh.hash(&params, &values);
+        let (digest, ciphertexts) = SehScheme::hash(&seh, &params, &values);
 
         for pos in 0..values.len() {
-            let opening = seh.open(&params, &values, &ciphertexts, pos);
-            assert!(seh.verify(&params, &digest, &opening));
+            let opening = SehScheme::open(&seh, &params, &values, &ciphertexts, pos);
+            assert!(SehScheme::verify(&seh, &params, &digest, &opening));
         }
     }
 
     #[test]
     fn test_seh_invalid_opening() {
-        let seh = StubSeh::new();
+        let seh = StubSeh::default();
         let params = SehParams::default();
         let values = vec![true, false, true, false];
 
-        let (digest, ciphertexts) = seh.hash(&params, &values);
-        let mut opening = seh.open(&params, &values, &ciphertexts, 0);
+        let (digest, ciphertexts) = SehScheme::hash(&seh, &params, &values);
+        let mut opening = SehScheme::open(&seh, &params, &values, &ciphertexts, 0);
 
         opening.sibling_hashes[0] = [1u8; 32];
 
-        assert!(!seh.verify(&params, &digest, &opening));
+        assert!(!SehScheme::verify(&seh, &params, &digest, &opening));
+    }
+
+    #[test]
+    fn test_default_seh_works() {
+        let seh = DefaultSeh::default();
+        let params = SehParams::default();
+        let values = vec![true, false, true, false];
+
+        let (digest, ciphertexts) = SehScheme::hash(&seh, &params, &values);
+        let opening = SehScheme::open(&seh, &params, &values, &ciphertexts, 0);
+        assert!(SehScheme::verify(&seh, &params, &digest, &opening));
     }
 }

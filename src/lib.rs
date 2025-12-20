@@ -59,6 +59,25 @@
 //! - `crypto`: Cryptographic primitives (FHE, SEH, PRF, PRG, small-iO)
 //! - `lio`: Local iO implementation
 //! - `padding`: Circuit padding to fixed topology
+//!
+//! ## Implementation Status (Milestone 3)
+//!
+//! | Component | Status | Notes |
+//! |-----------|--------|-------|
+//! | GGM PRF | Real | Standard textbook construction over SHA-256 PRG |
+//! | SHA-256 PRG | Real | H(seed ∥ ctr) expansion, RO model |
+//! | Wire labels | Real | Two random 32-byte labels per wire (L_i^0, L_i^1) |
+//! | Wire encryption | Real | PRF-masked output labels keyed by input labels |
+//! | MAC tags | Real | Generated AND verified during evaluation |
+//! | FHE | Feature-gated | StubFhe (default) or TfheFhe (tfhe-backend feature) |
+//! | SEH | Real | verify_seh(), evaluate_with_seh_check(), consistency proofs |
+//! | SmallObf | Structural | Per-gate obfuscated gadget (stub iO, explicit assumption) |
+//! | PRF puncturing | Real | prf_input_for_entry() exposes exact security mapping |
+//!
+//! ## Cargo Features
+//!
+//! - `stub-fhe` (default): Fast stub FHE for development/testing
+//! - `tfhe-backend`: Real LWE-based FHE using the tfhe crate (slow to compile)
 
 pub mod circuit;
 pub mod crypto;
@@ -67,7 +86,7 @@ pub mod padding;
 
 pub use circuit::{Circuit, ControlFunction, EquivalenceProof, Gate};
 pub use crypto::{FheScheme, PuncturablePrf, Prg, SehScheme, SmallObf};
-pub use lio::{LiO, LiOError, LiOParams, ObfuscatedLiO};
+pub use lio::{LiO, LiOError, LiOParams, ObfuscatedLiO, WireLabels};
 pub use padding::{pad, pad_optimized, pad_single, PaddedCircuit, PaddingOverhead};
 
 use circuit::to_ef_proof;

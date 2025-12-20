@@ -74,9 +74,9 @@ pub fn pad_single(circuit: &Circuit, n_bound: usize) -> Circuit {
     padded_gates.extend(copy_gates);
 
     while padded_gates.len() < n_bound {
-        let wire = (padded_gates.len() % num_wires) as u8;
-        let c1 = ((padded_gates.len() + 1) % num_wires) as u8;
-        let c2 = ((padded_gates.len() + 2) % num_wires) as u8;
+        let wire = (padded_gates.len() % num_wires) as u16;
+        let c1 = ((padded_gates.len() + 1) % num_wires) as u16;
+        let c2 = ((padded_gates.len() + 2) % num_wires) as u16;
 
         padded_gates.push(Gate::new(wire, c1, c2, ControlFunction::Xor));
         if padded_gates.len() < n_bound {
@@ -99,9 +99,9 @@ fn create_routing_network(num_wires: usize, depth: usize, start_idx: usize) -> V
     for level in 0..depth {
         let stride = 1 << level;
         for i in 0..(num_wires / (2 * stride)).max(1) {
-            let a = ((i * 2 * stride) % num_wires) as u8;
-            let b = (((i * 2 + 1) * stride) % num_wires) as u8;
-            let out = ((i * stride + start_idx + level) % num_wires) as u8;
+            let a = ((i * 2 * stride) % num_wires) as u16;
+            let b = (((i * 2 + 1) * stride) % num_wires) as u16;
+            let out = ((i * stride + start_idx + level) % num_wires) as u16;
 
             gates.push(Gate::new(out, a, b, ControlFunction::Xor));
         }
@@ -116,9 +116,9 @@ fn create_copy_gadgets(num_wires: usize, depth: usize) -> Vec<Gate> {
 
     for level in 0..depth {
         for i in 0..num_wires.min(4) {
-            let src = i as u8;
-            let dst = ((i + level + 1) % num_wires) as u8;
-            let ctrl = ((i + level + 2) % num_wires) as u8;
+            let src = i as u16;
+            let dst = ((i + level + 1) % num_wires) as u16;
+            let ctrl = ((i + level + 2) % num_wires) as u16;
 
             gates.push(Gate::new(dst, src, ctrl, ControlFunction::Xor));
         }
@@ -133,16 +133,16 @@ fn create_identity_circuit(num_wires: usize, size: usize) -> Circuit {
     let num_wires = num_wires.max(4);
 
     for i in 0..(size / 2) {
-        let wire = (i % num_wires) as u8;
-        let c1 = ((i + 1) % num_wires) as u8;
-        let c2 = ((i + 2) % num_wires) as u8;
+        let wire = (i % num_wires) as u16;
+        let c1 = ((i + 1) % num_wires) as u16;
+        let c2 = ((i + 2) % num_wires) as u16;
 
         gates.push(Gate::new(wire, c1, c2, ControlFunction::Xor));
         gates.push(Gate::new(wire, c1, c2, ControlFunction::Xor));
     }
 
     if size % 2 == 1 {
-        let wire = ((size / 2) % num_wires) as u8;
+        let wire = ((size / 2) % num_wires) as u16;
         gates.push(Gate::new(wire, wire, wire, ControlFunction::F));
     }
 
@@ -162,9 +162,9 @@ fn create_and_tree(num_outputs: usize, num_wires: usize) -> Vec<Gate> {
     for level in 0..depth {
         let pairs = (num_outputs >> level).max(1) / 2;
         for i in 0..pairs {
-            let a = (i * 2 % num_wires) as u8;
-            let b = ((i * 2 + 1) % num_wires) as u8;
-            let out = ((num_wires - 1 - level - i) % num_wires) as u8;
+            let a = (i * 2 % num_wires) as u16;
+            let b = ((i * 2 + 1) % num_wires) as u16;
+            let out = ((num_wires - 1 - level - i) % num_wires) as u16;
 
             gates.push(Gate::new(out, a, b, ControlFunction::And));
         }

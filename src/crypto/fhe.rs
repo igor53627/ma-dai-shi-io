@@ -115,7 +115,7 @@ pub trait FheScheme: Clone + Debug {
 ///
 /// WARNING: This is NOT cryptographically secure. It's a placeholder
 /// that maintains the correct interface while real FHE is integrated.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct StubFhe;
 
 impl FheScheme for StubFhe {
@@ -170,6 +170,107 @@ impl FheScheme for StubFhe {
     }
 }
 
+// ============================================================================
+// Real TFHE Backend (behind feature flag)
+// ============================================================================
+
+#[cfg(feature = "tfhe-backend")]
+mod tfhe_backend {
+    use super::{FheParams, FheScheme};
+    use std::fmt::Debug;
+    use tfhe::boolean::prelude::*;
+
+    #[derive(Clone)]
+    pub struct TfheSecretKey {
+        pub client_key: ClientKey,
+    }
+
+    impl Debug for TfheSecretKey {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "TfheSecretKey(..)")
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct TfhePublicKey {
+        pub client_key: ClientKey,
+        pub server_key: ServerKey,
+    }
+
+    impl Debug for TfhePublicKey {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "TfhePublicKey(..)")
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct TfheCiphertextWrapper(pub Ciphertext);
+
+    #[derive(Clone, Debug, Default)]
+    pub struct TfheFhe;
+
+    impl FheScheme for TfheFhe {
+        type Ciphertext = TfheCiphertextWrapper;
+        type PublicKey = TfhePublicKey;
+        type SecretKey = TfheSecretKey;
+
+        fn keygen(&self, _params: &FheParams) -> (Self::SecretKey, Self::PublicKey) {
+            let (client_key, server_key) = gen_keys();
+            let sk = TfheSecretKey {
+                client_key: client_key.clone(),
+            };
+            let pk = TfhePublicKey {
+                client_key,
+                server_key,
+            };
+            (sk, pk)
+        }
+
+        fn encrypt_bit(&self, pk: &Self::PublicKey, bit: bool) -> Self::Ciphertext {
+            TfheCiphertextWrapper(pk.client_key.encrypt(bit))
+        }
+
+        fn decrypt_bit(&self, sk: &Self::SecretKey, ct: &Self::Ciphertext) -> bool {
+            sk.client_key.decrypt(&ct.0)
+        }
+
+        fn eval_and(
+            &self,
+            pk: &Self::PublicKey,
+            a: &Self::Ciphertext,
+            b: &Self::Ciphertext,
+        ) -> Self::Ciphertext {
+            TfheCiphertextWrapper(pk.server_key.and(&a.0, &b.0))
+        }
+
+        fn eval_xor(
+            &self,
+            pk: &Self::PublicKey,
+            a: &Self::Ciphertext,
+            b: &Self::Ciphertext,
+        ) -> Self::Ciphertext {
+            TfheCiphertextWrapper(pk.server_key.xor(&a.0, &b.0))
+        }
+
+        fn eval_not(&self, pk: &Self::PublicKey, a: &Self::Ciphertext) -> Self::Ciphertext {
+            TfheCiphertextWrapper(pk.server_key.not(&a.0))
+        }
+    }
+}
+
+#[cfg(feature = "tfhe-backend")]
+pub use tfhe_backend::{TfheCiphertextWrapper, TfheFhe, TfhePublicKey, TfheSecretKey};
+
+// ============================================================================
+// DefaultFhe Type Alias (switches based on feature)
+// ============================================================================
+
+#[cfg(feature = "tfhe-backend")]
+pub type DefaultFhe = TfheFhe;
+
+#[cfg(not(feature = "tfhe-backend"))]
+pub type DefaultFhe = StubFhe;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -204,5 +305,15 @@ mod tests {
 
         let ct_or = fhe.eval_or(&pk, &ct_a, &ct_b);
         assert!(fhe.decrypt_bit(&sk, &ct_or));
+    }
+
+    #[test]
+    fn test_default_fhe_works() {
+        let fhe = DefaultFhe::default();
+        let params = FheParams::default();
+        let (sk, pk) = fhe.keygen(&params);
+
+        let ct = fhe.encrypt_bit(&pk, true);
+        assert!(fhe.decrypt_bit(&sk, &ct));
     }
 }
