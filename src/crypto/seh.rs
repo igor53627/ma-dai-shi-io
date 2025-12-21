@@ -346,7 +346,7 @@ impl<F: FheScheme> GenericSeh<F> {
     /// extraction operations (when implemented).
     pub fn hash_multikey(
         &self,
-        params: &SehParams,
+        _params: &SehParams,
         keys: &SehKeyHierarchy<F>,
         values: &[bool],
     ) -> (SehDigest, Vec<F::Ciphertext>)
@@ -476,7 +476,7 @@ where
 
     fn open(
         &self,
-        params: &SehParams,
+        _params: &SehParams,
         _values: &[bool],
         ciphertexts: &[F::Ciphertext],
         position: usize,

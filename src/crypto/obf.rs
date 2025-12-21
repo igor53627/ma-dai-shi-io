@@ -185,7 +185,16 @@ impl TruthTableObf {
     }
 
     /// Get the output for a given input index
+    ///
+    /// # Panics
+    /// Panics if `index >= self.num_rows()`.
     pub fn get_output(&self, index: usize) -> &[u8] {
+        assert!(
+            index < self.num_rows(),
+            "index {} out of bounds for table with {} rows",
+            index,
+            self.num_rows()
+        );
         let start = index * self.out_bytes as usize;
         let end = start + self.out_bytes as usize;
         &self.table[start..end]
@@ -214,7 +223,14 @@ pub fn decode_input_to_index(input: &[u8], n_bits: usize) -> usize {
     for byte_idx in 0..n_bytes.min(input.len()) {
         index |= (input[byte_idx] as usize) << (byte_idx * 8);
     }
-    index & ((1 << n_bits) - 1)
+    let mask = if n_bits == 0 {
+        0
+    } else if n_bits >= usize::BITS as usize {
+        usize::MAX
+    } else {
+        (1usize << n_bits) - 1
+    };
+    index & mask
 }
 
 /// Default small-circuit obfuscator.
@@ -495,7 +511,16 @@ impl Default for GeneralizedCanonicalSmallObf {
 
 impl GeneralizedCanonicalSmallObf {
     /// Create with custom max input bits
+    ///
+    /// # Panics
+    /// Panics if `max_input_bits >= usize::BITS` (would overflow shift operations).
     pub fn new(max_input_bits: usize) -> Self {
+        assert!(
+            max_input_bits < usize::BITS as usize,
+            "max_input_bits={} must be < {} to avoid shift overflow",
+            max_input_bits,
+            usize::BITS
+        );
         Self { max_input_bits }
     }
 

@@ -54,7 +54,8 @@ fn main() {
     println!("{:-<6} {:->12} {:->12} {:->12} {:->12}", "", "", "", "", "");
 
     // Start with steps of 2, then do exact max_bits at the end
-    let mut bits_to_test: Vec<usize> = (24..max_bits).step_by(2).collect();
+    let start_bits = max_bits.min(24);
+    let mut bits_to_test: Vec<usize> = (start_bits..max_bits).step_by(2).collect();
     if !bits_to_test.contains(&max_bits) {
         bits_to_test.push(max_bits);
     }
@@ -78,12 +79,19 @@ fn main() {
 
         // Allocate and fill the table (simulating obfuscation)
         // Using a simple XOR function for speed
-        let mut table = vec![0u8; n_rows as usize];
+        let table_size = match usize::try_from(n_rows) {
+            Ok(size) => size,
+            Err(_) => {
+                println!("SKIP (too large for usize)");
+                continue;
+            }
+        };
+        let mut table = vec![0u8; table_size];
         
         // Process in chunks for better cache behavior
         const CHUNK_SIZE: usize = 1 << 20; // 1M entries at a time
-        for chunk_start in (0..n_rows as usize).step_by(CHUNK_SIZE) {
-            let chunk_end = (chunk_start + CHUNK_SIZE).min(n_rows as usize);
+        for chunk_start in (0..table_size).step_by(CHUNK_SIZE) {
+            let chunk_end = (chunk_start + CHUNK_SIZE).min(table_size);
             for i in chunk_start..chunk_end {
                 let bytes = i.to_le_bytes();
                 table[i] = bytes.iter().fold(0u8, |acc, &b| acc ^ b);
@@ -94,7 +102,7 @@ fn main() {
         println!("{:>12}", format_duration(elapsed.as_secs_f64()));
 
         // Verify a few entries
-        let test_idx = n_rows as usize / 2;
+        let test_idx = table_size / 2;
         let expected: u8 = test_idx.to_le_bytes().iter().fold(0, |acc, &b| acc ^ b);
         assert_eq!(table[test_idx], expected, "Verification failed!");
 

@@ -144,7 +144,9 @@ fn create_identity_circuit(num_wires: usize, size: usize) -> Circuit {
 
     if size % 2 == 1 {
         let wire = ((size / 2) % num_wires) as u16;
-        gates.push(Gate::new(wire, wire, wire, ControlFunction::Xor));
+        let aux = ((size / 2 + 1) % num_wires) as u16;
+        gates.push(Gate::new(wire, wire, aux, ControlFunction::Xor));
+        gates.push(Gate::new(wire, wire, aux, ControlFunction::Xor));
     }
 
     Circuit { gates, num_wires }

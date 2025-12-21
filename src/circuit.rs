@@ -126,7 +126,16 @@ impl Circuit {
     /// Generate a random circuit (for testing)
     ///
     /// Uses a subset of control functions similar to R57 circuits.
+    ///
+    /// # Panics
+    /// Panics if `num_wires > u16::MAX` since wire indices are stored as `u16`.
     pub fn random_r57(num_wires: usize, num_gates: usize) -> Self {
+        assert!(
+            num_wires <= u16::MAX as usize,
+            "num_wires={} exceeds u16::MAX={}",
+            num_wires,
+            u16::MAX
+        );
         let mut rng = rand::thread_rng();
         let funcs = [
             ControlFunction::And,
