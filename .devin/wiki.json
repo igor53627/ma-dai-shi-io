@@ -1,7 +1,7 @@
 {
   "repo_notes": [
     {
-      "content": "Ma-Dai-Shi iO is a quasi-linear indistinguishability obfuscation implementation based on the Ma-Dai-Shi 2025 paper. The project has three main parts: (1) Rust core library in src/, (2) Lean 4 formal verification in lean/, and (3) Honeypot demo application in honeypot-demo/. The Rust library implements the full iO construction with LiO, SEH, FHE, PRF, and padding. The Lean formalization proves the main security theorem with 0 sorries and 2 documented axioms.",
+      "content": "Ma-Dai-Shi iO is a quasi-linear indistinguishability obfuscation implementation based on the Ma-Dai-Shi 2025 paper. The project has three main parts: (1) Rust core library in src/, (2) Lean 4 formal verification in lean/, and (3) Honeypot demo application in honeypot-demo/. The Rust library implements the full iO construction with LiO, SEH, FHE, PRF, and padding. The Lean formalization proves the main security theorem with 0 sorries and 1 documented axiom.",
       "author": "maintainer"
     },
     {
@@ -46,7 +46,7 @@
     },
     {
       "title": "Lean Formalization",
-      "purpose": "Document the lean/ folder: main theorem, hybrid chain indistinguishability, s-equivalence, and the 2 documented axioms.",
+      "purpose": "Document the lean/ folder: main theorem, hybrid chain indistinguishability, s-equivalence, and the 1 documented axiom (pad_transitive_sequiv_core).",
       "parent": null
     },
     {
