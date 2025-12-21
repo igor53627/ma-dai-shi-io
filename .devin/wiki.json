@@ -1,0 +1,63 @@
+{
+  "repo_notes": [
+    {
+      "content": "Ma-Dai-Shi iO is a quasi-linear indistinguishability obfuscation implementation based on the Ma-Dai-Shi 2025 paper. The project has three main parts: (1) Rust core library in src/, (2) Lean 4 formal verification in lean/, and (3) Honeypot demo application in honeypot-demo/. The Rust library implements the full iO construction with LiO, SEH, FHE, PRF, and padding. The Lean formalization proves the main security theorem with 0 sorries and 2 documented axioms.",
+      "author": "maintainer"
+    },
+    {
+      "content": "Key cryptographic primitives are in src/crypto/: fhe.rs (FHE with stub and real TFHE backends), prf.rs (GGM-based puncturable PRF), prg.rs (SHA-256 based PRG), seh.rs (Somewhere Extractable Hash with Merkle trees), and obf.rs (small-circuit iO with canonical truth tables). The lio.rs module implements Local iO with encrypted gate tables and MAC verification. The hybrid.rs module implements hybrid security experiments for the security proof.",
+      "author": "maintainer"
+    },
+    {
+      "content": "The honeypot-demo/ folder contains a complete demo: circuits-medium/ has Noir zkSNARK circuits, contracts/ has Solidity verifiers deployed on Tenderly testnet, wasm/ has the Rust WASM evaluator, and web/ has the interactive browser UI. The demo shows BIP-39 seed phrase validation with double-layer privacy (iO hides the validator, zkSNARK hides which seed was found).",
+      "author": "maintainer"
+    }
+  ],
+  "pages": [
+    {
+      "title": "Architecture Overview",
+      "purpose": "Document the overall Ma-Dai-Shi iO architecture: how circuits flow through padding, LiO, and obfuscation. Include the quasi-linear complexity guarantees.",
+      "parent": null
+    },
+    {
+      "title": "Cryptographic Primitives",
+      "purpose": "Document the src/crypto/ module: FHE, PRF, PRG, SEH, and SmallObf traits and implementations. Explain stub vs real backends.",
+      "parent": "Architecture Overview"
+    },
+    {
+      "title": "Local iO (LiO)",
+      "purpose": "Document src/lio.rs: wire labels, encrypted gate tables, MAC verification, and evaluation. Explain how LiO uses SEH and SmallObf.",
+      "parent": "Architecture Overview"
+    },
+    {
+      "title": "Hybrid Security",
+      "purpose": "Document src/hybrid.rs: hybrid sequence generation, PRF puncturing, and the security reduction from Theorem 1.",
+      "parent": "Architecture Overview"
+    },
+    {
+      "title": "Circuit Padding",
+      "purpose": "Document src/padding.rs: pad_single, routing networks, copy gadgets, identity circuits, and AND-tree construction.",
+      "parent": "Architecture Overview"
+    },
+    {
+      "title": "Truth-Table iO",
+      "purpose": "Document GeneralizedCanonicalSmallObf for bounded-input circuits (tested up to 39 bits / 512 GB tables). Cover TruthTableObf, encoding/decoding, and practical limits.",
+      "parent": "Cryptographic Primitives"
+    },
+    {
+      "title": "Lean Formalization",
+      "purpose": "Document the lean/ folder: main theorem, hybrid chain indistinguishability, s-equivalence, and the 2 documented axioms.",
+      "parent": null
+    },
+    {
+      "title": "Honeypot Demo",
+      "purpose": "Document honeypot-demo/: the seed phrase honeypot use case, Noir circuits, Solidity contracts, WASM evaluator, and web UI.",
+      "parent": null
+    },
+    {
+      "title": "Build & Test",
+      "purpose": "Document how to build and test: cargo commands, Noir/bb compilation, Foundry tests, and web app development.",
+      "parent": null
+    }
+  ]
+}

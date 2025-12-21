@@ -23,6 +23,7 @@ If two circuits compute the same function, their obfuscations are computationall
 
 - **Quasi-linear complexity**: Õ(N) obfuscation time and program size (N = circuit + proof size)
 - **LWE-based security**: Based on LWE, sub-exponential OWF, and iO for small circuits
+- **Generalized truth-table iO**: Information-theoretic iO for bounded-input circuits (tested up to 39 bits / 512 GB tables)
 - **Practical for crypto**: Enables seed phrase honeypots, private smart contracts, etc.
 
 ## Repository Structure
