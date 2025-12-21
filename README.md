@@ -1,5 +1,7 @@
 # Ma-Dai-Shi iO
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/igor53627/ma-dai-shi-io)
+
 Quasi-linear indistinguishability obfuscation (iO).
 
 Implementation of the construction from ["Quasi-Linear Indistinguishability Obfuscation via Mathematical Proofs of Equivalence and Applications"](https://eprint.iacr.org/2025/307) (Ma, Dai, Shi 2025).

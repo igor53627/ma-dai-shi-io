@@ -673,4 +673,104 @@ theorem TopologicallyEquivalent.trans {din dout : Nat} {C C' C'' : Circuit din d
     let ⟨hid2, hinp2, hout2⟩ := h2.gates_match i hi'
     ⟨hid1.trans hid2, hinp1.trans hinp2, hout1.trans hout2⟩
 
+/-!
+## Circuit.withOps: Replacing gate operations on a fixed topology
+
+This is a key combinator for the padding construction. It allows us to
+vary gate operations while preserving the circuit topology (gate IDs,
+input/output wires, and circuit structure).
+
+The crucial property is that circuits produced by `withOps` on the same
+base circuit are always topologically equivalent.
+-/
+
+/-- Replace gate operations while keeping gate IDs, inputs, outputs, and topology fixed.
+
+This is the key combinator for constructing padded circuits with identical topology.
+Given a circuit C and a function assigning new operations to each gate position,
+produces a new circuit with the same topology but different gate operations.
+-/
+def Circuit.withOps {din dout : Nat} (C : Circuit din dout)
+    (ops : Fin C.gates.length → GateOp din dout) : Circuit din dout where
+  gates := (List.finRange C.gates.length).map fun i =>
+    let g := C.gates.get i
+    { id := g.id, inputs := g.inputs, outputs := g.outputs, op := ops i }
+  inputWires := C.inputWires
+  outputWires := C.outputWires
+  inputWires_nodup := C.inputWires_nodup
+  outputWires_nodup := C.outputWires_nodup
+  topological := by
+    intro i hi k
+    simp only [List.length_map, List.length_finRange] at hi
+    simp only [List.get_eq_getElem, List.getElem_map, List.getElem_finRange]
+    exact C.topological i hi k
+  inputs_not_outputs := by
+    intro w hw i hi m
+    simp only [List.length_map, List.length_finRange] at hi
+    simp only [List.get_eq_getElem, List.getElem_map, List.getElem_finRange]
+    exact C.inputs_not_outputs w hw i hi m
+  unique_drivers := by
+    intro i j hi hj mi mj heq
+    simp only [List.length_map, List.length_finRange] at hi hj
+    simp only [List.get_eq_getElem, List.getElem_map, List.getElem_finRange] at heq
+    exact C.unique_drivers i j hi hj mi mj heq
+
+/-- withOps preserves gate list length -/
+@[simp] lemma Circuit.withOps_length {din dout : Nat} (C : Circuit din dout)
+    (ops : Fin C.gates.length → GateOp din dout) :
+    (C.withOps ops).gates.length = C.gates.length := by
+  simp only [withOps, List.length_map, List.length_finRange]
+
+/-- withOps preserves circuit size -/
+@[simp] lemma Circuit.withOps_size {din dout : Nat} (C : Circuit din dout)
+    (ops : Fin C.gates.length → GateOp din dout) :
+    (C.withOps ops).size = C.size := by
+  simp only [size, withOps_length]
+
+/-- withOps preserves input wires -/
+@[simp] lemma Circuit.withOps_inputWires {din dout : Nat} (C : Circuit din dout)
+    (ops : Fin C.gates.length → GateOp din dout) :
+    (C.withOps ops).inputWires = C.inputWires := rfl
+
+/-- withOps preserves output wires -/
+@[simp] lemma Circuit.withOps_outputWires {din dout : Nat} (C : Circuit din dout)
+    (ops : Fin C.gates.length → GateOp din dout) :
+    (C.withOps ops).outputWires = C.outputWires := rfl
+
+/-- Get the gate at position i in withOps -/
+lemma Circuit.withOps_gate {din dout : Nat} (C : Circuit din dout)
+    (ops : Fin C.gates.length → GateOp din dout) (i : Fin C.gates.length) :
+    (C.withOps ops).gates.get (Fin.cast (withOps_length C ops).symm i) =
+    { id := (C.gates.get i).id,
+      inputs := (C.gates.get i).inputs,
+      outputs := (C.gates.get i).outputs,
+      op := ops i } := by
+  simp only [withOps, List.get_eq_getElem, List.getElem_map, List.getElem_finRange]
+  rfl
+
+/-- withOps produces topologically equivalent circuit -/
+theorem Circuit.withOps_topo_equiv {din dout : Nat} (C : Circuit din dout)
+    (ops : Fin C.gates.length → GateOp din dout) :
+    TopologicallyEquivalent C (C.withOps ops) where
+  len_eq := (withOps_length C ops).symm
+  inputs_eq := rfl
+  outputs_eq := rfl
+  gates_match := by
+    intro i hi
+    simp only [withOps, List.get_eq_getElem, List.getElem_map, List.getElem_finRange]
+    exact ⟨rfl, rfl, rfl⟩
+
+/-- Two circuits built with withOps on the same base are topologically equivalent -/
+theorem Circuit.withOps_withOps_topo_equiv {din dout : Nat} (C : Circuit din dout)
+    (ops₁ ops₂ : Fin C.gates.length → GateOp din dout) :
+    TopologicallyEquivalent (C.withOps ops₁) (C.withOps ops₂) :=
+  (withOps_topo_equiv C ops₁).symm.trans (withOps_topo_equiv C ops₂)
+
+/-- If ops agree everywhere, withOps produces the same gates -/
+lemma Circuit.withOps_eq_of_ops_eq {din dout : Nat} (C : Circuit din dout)
+    (ops₁ ops₂ : Fin C.gates.length → GateOp din dout)
+    (h : ops₁ = ops₂) :
+    C.withOps ops₁ = C.withOps ops₂ := by
+  simp only [h]
+
 end MaDaiShi

@@ -8,5 +8,6 @@ import MaDaiShi.Circuit
 import MaDaiShi.ExtendedFrege
 import MaDaiShi.SEquivalence
 import MaDaiShi.Padding
+import MaDaiShi.PaddingConstruction
 import MaDaiShi.LocalIO
 import MaDaiShi.Security
