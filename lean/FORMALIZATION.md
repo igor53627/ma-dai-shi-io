@@ -166,12 +166,15 @@ def isNegligible (adv : SecurityParam → Advantage) : Prop :=
     (adv κ).numerator * κ^c ≤ (adv κ).denominator
 ```
 
-**`Distinguisher`**: PPT distinguisher with triangle inequality.
+**`Distinguisher`**: PPT distinguisher with required properties.
 
 ```lean
 structure Distinguisher where
   distinguish : SecurityParam → ObfuscatedProgram → ObfuscatedProgram → Advantage
-  triangle : ∀ κ P P' P'', 
+  polynomial_time : True  -- Runtime constraint (placeholder)
+  same_is_zero : ∀ κ P, (distinguish κ P P).numerator = 0  -- Identical programs
+  symmetric : ∀ κ P P', distinguish κ P P' = distinguish κ P' P  -- Symmetry
+  triangle : ∀ κ P P' P'',  -- Triangle inequality
     distinguish κ P P'' ≤ (distinguish κ P P').add (distinguish κ P' P'')
 ```
 
