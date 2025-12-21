@@ -906,13 +906,13 @@ mod tests {
     fn test_generalized_obf_different_functions_differ() {
         let obf = GeneralizedCanonicalSmallObf::default();
 
-        let prog_id = BytecodeProgram::identity(1);
-        let prog_xor = BytecodeProgram::xor_all(1);
+        let prog_and = GateGadget::new(GateGadget::AND, (0, 1), 2).to_bytecode_program();
+        let prog_xor = GateGadget::new(GateGadget::XOR, (0, 1), 2).to_bytecode_program();
 
-        let obf_id = obf.obfuscate(&prog_id);
+        let obf_and = obf.obfuscate(&prog_and);
         let obf_xor = obf.obfuscate(&prog_xor);
 
-        assert_eq!(obf_id.table, obf_xor.table);
+        assert_ne!(obf_and.table, obf_xor.table, "Different functions should have different tables");
     }
 
     #[test]

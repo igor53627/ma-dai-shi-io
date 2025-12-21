@@ -75,12 +75,11 @@ pub fn pad_single(circuit: &Circuit, n_bound: usize) -> Circuit {
 
     while padded_gates.len() < n_bound {
         let wire = (padded_gates.len() % num_wires) as u16;
-        let c1 = ((padded_gates.len() + 1) % num_wires) as u16;
-        let c2 = ((padded_gates.len() + 2) % num_wires) as u16;
+        let aux = ((padded_gates.len() + 1) % num_wires) as u16;
 
-        padded_gates.push(Gate::new(wire, c1, c2, ControlFunction::Xor));
+        padded_gates.push(Gate::new(wire, wire, aux, ControlFunction::Xor));
         if padded_gates.len() < n_bound {
-            padded_gates.push(Gate::new(wire, c1, c2, ControlFunction::Xor));
+            padded_gates.push(Gate::new(wire, wire, aux, ControlFunction::Xor));
         }
     }
 
@@ -128,22 +127,24 @@ fn create_copy_gadgets(num_wires: usize, depth: usize) -> Vec<Gate> {
 }
 
 /// Create an identity circuit of a given size
+///
+/// Uses pairs of self-cancelling XOR gates: wire = wire XOR aux; wire = wire XOR aux
+/// This preserves all wire values while filling the circuit to the target size.
 fn create_identity_circuit(num_wires: usize, size: usize) -> Circuit {
     let mut gates = Vec::with_capacity(size);
     let num_wires = num_wires.max(4);
 
     for i in 0..(size / 2) {
         let wire = (i % num_wires) as u16;
-        let c1 = ((i + 1) % num_wires) as u16;
-        let c2 = ((i + 2) % num_wires) as u16;
+        let aux = ((i + 1) % num_wires) as u16;
 
-        gates.push(Gate::new(wire, c1, c2, ControlFunction::Xor));
-        gates.push(Gate::new(wire, c1, c2, ControlFunction::Xor));
+        gates.push(Gate::new(wire, wire, aux, ControlFunction::Xor));
+        gates.push(Gate::new(wire, wire, aux, ControlFunction::Xor));
     }
 
     if size % 2 == 1 {
         let wire = ((size / 2) % num_wires) as u16;
-        gates.push(Gate::new(wire, wire, wire, ControlFunction::F));
+        gates.push(Gate::new(wire, wire, wire, ControlFunction::Xor));
     }
 
     Circuit { gates, num_wires }
