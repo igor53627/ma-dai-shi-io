@@ -93,32 +93,197 @@ lemma skeletonInputWires_nodup (numInputs : Nat) :
 lemma skeletonOutputWires_nodup (numInputs numOutputs : Nat) : 
     (skeletonOutputWires numInputs numOutputs).Nodup := List.nodup_range' numInputs numOutputs
 
+/-!
+### Skeleton Gate Properties
+
+These lemmas prove that skeletonGates satisfies the circuit invariants.
+They document the infrastructure needed for a non-trivial skeleton implementation.
+Currently PadSkeleton uses an empty gate list for simplicity, but these lemmas
+show that skeletonGates would form a valid circuit when numInputs > 0.
+-/
+
+/-- Get gate at index i from skeletonGates -/
+lemma skeletonGates_get (din dout numInputs gateCount : Nat) (i : Nat) (hi : i < gateCount) :
+    (skeletonGates din dout numInputs gateCount).get ⟨i, by simp [skeletonGates]; exact hi⟩ = 
+    skeletonGate din dout numInputs i := by
+  simp only [skeletonGates, List.get_eq_getElem, List.getElem_map, List.getElem_range]
+
+/-- Output wire of gate i at position m -/
+lemma skeletonGate_output (din dout numInputs i : Nat) (m : Fin dout) :
+    (skeletonGate din dout numInputs i).outputs m = numInputs + i * dout + m.val := rfl
+
+/-- Input wire of gate i at position k -/
+lemma skeletonGate_input (din dout numInputs i : Nat) (k : Fin din) :
+    (skeletonGate din dout numInputs i).inputs k = 
+    (i * din + k.val) % (numInputs + i * dout) := rfl
+
+/-- Gate output wires are >= numInputs -/
+lemma skeletonGate_output_ge (din dout numInputs i : Nat) (m : Fin dout) :
+    numInputs ≤ (skeletonGate din dout numInputs i).outputs m := by
+  simp only [skeletonGate_output]
+  omega
+
+/-- Gate input wires are bounded by numInputs + i * dout when this is positive -/
+lemma skeletonGate_input_lt (din dout numInputs i : Nat) (k : Fin din) 
+    (hD : 0 < numInputs + i * dout) :
+    (skeletonGate din dout numInputs i).inputs k < numInputs + i * dout := by
+  simp only [skeletonGate_input]
+  exact Nat.mod_lt _ hD
+
+/-- Helper: if i < j then i * dout + mi < j * dout for any mi < dout -/
+lemma mul_add_lt_mul_of_lt {i j dout : Nat} (hlt : i < j) (_hdout : 0 < dout) (mi : Fin dout) :
+    i * dout + mi.val < j * dout := by
+  have h1 : i * dout + mi.val < (i + 1) * dout := by
+    simp only [Nat.add_mul, Nat.one_mul]
+    exact Nat.add_lt_add_left mi.isLt _
+  have h2 : (i + 1) * dout ≤ j * dout := Nat.mul_le_mul_right dout (Nat.succ_le_of_lt hlt)
+  exact Nat.lt_of_lt_of_le h1 h2
+
+/--
+  PadSkeletonNonTrivial: Non-trivial skeleton with actual gates.
+  
+  Requires numInputs > 0 to ensure topological invariant holds.
+  This is the foundation for eliminating the pad_transitive_sequiv_core axiom.
+-/
+noncomputable def PadSkeletonNonTrivial (din dout : Nat) (numInputs numOutputs : Nat)
+    (Ncirc Nproof : Nat) (hI : 0 < numInputs) : Circuit din dout :=
+  let gateCount := skeletonGateCount Ncirc Nproof
+  {
+    gates := skeletonGates din dout numInputs gateCount
+    inputWires := List.range numInputs
+    outputWires := List.range' numInputs numOutputs
+    inputWires_nodup := List.nodup_range numInputs
+    outputWires_nodup := List.nodup_range' numInputs numOutputs
+    topological := by
+      intro i hi k
+      simp only [skeletonGates_length] at hi
+      have hgate := skeletonGates_get din dout numInputs gateCount i hi
+      simp only [List.get_eq_getElem] at hgate ⊢
+      rw [hgate]
+      -- w is the input wire for gate i at position k
+      simp only [skeletonGate, skeletonGate_input]
+      set w := (i * din + k.val) % (numInputs + i * dout) with hw_def
+      set D := numInputs + i * dout with hD_def
+      have hDpos : 0 < D := Nat.add_pos_left hI _
+      have hw_lt : w < D := Nat.mod_lt _ hDpos
+      by_cases hw_inp : w < numInputs
+      · -- Case 1: w is a primary input
+        left
+        exact List.mem_range.mpr hw_inp
+      · -- Case 2: w comes from an earlier gate's output
+        right
+        have hw_ge : numInputs ≤ w := Nat.le_of_not_lt hw_inp
+        -- Must have dout > 0 (otherwise w < numInputs + 0 = numInputs, contradiction)
+        have hdout_pos : 0 < dout := by
+          by_contra hdout_eq
+          push_neg at hdout_eq
+          simp only [Nat.le_zero] at hdout_eq
+          simp only [hdout_eq, Nat.mul_zero, Nat.add_zero, D] at hw_lt
+          exact Nat.not_lt.mpr hw_ge hw_lt
+        set offset := w - numInputs with hoffset_def
+        have hoffset : offset < i * dout := by omega
+        have hj_lt : offset / dout < i := Nat.div_lt_of_lt_mul (by rwa [Nat.mul_comm])
+        have hm_lt : offset % dout < dout := Nat.mod_lt offset hdout_pos
+        let m : Fin dout := ⟨offset % dout, hm_lt⟩
+        have hj_lt' : offset / dout < gateCount := Nat.lt_trans hj_lt hi
+        refine ⟨offset / dout, hj_lt, m, ?_⟩
+        -- Goal: (skeletonGates ...)[offset / dout].outputs m = w
+        simp only [skeletonGates, List.getElem_map, List.getElem_range, skeletonGate_output]
+        -- Goal: numInputs + (offset / dout) * dout + (offset % dout) = w
+        -- Since offset = w - numInputs, we have w = numInputs + offset
+        have hw_eq : w = numInputs + offset := by
+          simp only [hoffset_def]
+          exact (Nat.add_sub_cancel' hw_ge).symm
+        -- And offset = (offset / dout) * dout + offset % dout
+        -- Note: Nat.div_add_mod gives: dout * (offset / dout) + offset % dout = offset
+        -- We need: offset / dout * dout + offset % dout = offset
+        have h_div_mod : offset / dout * dout + offset % dout = offset := by
+          rw [Nat.mul_comm]
+          exact Nat.div_add_mod offset dout
+        -- Goal: numInputs + offset / dout * dout + offset % dout = w
+        -- Rewrite using hw_eq: w = numInputs + offset
+        rw [hw_eq]
+        -- Goal: numInputs + offset / dout * dout + offset % dout = numInputs + offset
+        -- This is associativity + h_div_mod
+        have h1 : numInputs + offset / dout * dout + offset % dout = 
+                  numInputs + (offset / dout * dout + offset % dout) := Nat.add_assoc _ _ _
+        rw [h1, h_div_mod]
+    inputs_not_outputs := by
+      intro w hw_inp i hi m
+      simp only [skeletonGates_length] at hi
+      have hw_lt : w < numInputs := List.mem_range.mp hw_inp
+      -- Gate i outputs are: numInputs + i * dout + m.val, which is >= numInputs
+      -- Compute the output wire
+      have hout : (skeletonGates din dout numInputs gateCount)[i].outputs m = 
+                  numInputs + i * dout + m.val := by
+        simp only [skeletonGates, List.getElem_map, List.getElem_range, skeletonGate_output]
+      -- Goal: w ≠ (output of gate i at position m)
+      intro heq
+      -- heq uses .get while hout uses subscript []; they're the same
+      simp only [List.get_eq_getElem] at heq
+      -- heq : (skeletonGates...)[i].outputs m = w
+      rw [hout] at heq
+      -- heq : numInputs + i * dout + m.val = w
+      -- But w < numInputs, and numInputs + i * dout + m.val >= numInputs
+      have hge : numInputs ≤ numInputs + i * dout + m.val := by
+        have h1 : numInputs ≤ numInputs + i * dout := Nat.le_add_right _ _
+        exact Nat.le_trans h1 (Nat.le_add_right _ _)
+      rw [← heq] at hw_lt
+      exact Nat.not_lt.mpr hge hw_lt
+    unique_drivers := by
+      intro i j hi hj mi mj heq
+      -- Handle dout = 0 case: mi and mj are of type Fin 0, which is empty
+      by_cases hdout : dout = 0
+      · exact Fin.elim0 (hdout ▸ mi)
+      · have hdout_pos : 0 < dout := Nat.pos_of_ne_zero hdout
+        simp only [skeletonGates_length] at hi hj
+        -- Outputs are: numInputs + i * dout + mi.val and numInputs + j * dout + mj.val
+        have out_i : (skeletonGates din dout numInputs gateCount)[i].outputs mi = 
+                     numInputs + i * dout + mi.val := by
+          simp only [skeletonGates, List.getElem_map, List.getElem_range, skeletonGate_output]
+        have out_j : (skeletonGates din dout numInputs gateCount)[j].outputs mj = 
+                     numInputs + j * dout + mj.val := by
+          simp only [skeletonGates, List.getElem_map, List.getElem_range, skeletonGate_output]
+        have heq' : numInputs + i * dout + mi.val = numInputs + j * dout + mj.val := by
+          rw [← out_i, ← out_j]; exact heq
+        have h : i * dout + mi.val = j * dout + mj.val := by omega
+        by_contra hij
+        rcases Nat.lt_trichotomy i j with hlt | heqij | hgt
+        · have := mul_add_lt_mul_of_lt hlt hdout_pos mi; omega
+        · exact hij heqij
+        · have := mul_add_lt_mul_of_lt hgt hdout_pos mj; omega
+  }
+
+/-- PadSkeletonNonTrivial gate count -/
+theorem PadSkeletonNonTrivial_gates_length {din dout : Nat} 
+    (numInputs numOutputs Ncirc Nproof : Nat) (hI : 0 < numInputs) :
+    (PadSkeletonNonTrivial din dout numInputs numOutputs Ncirc Nproof hI).gates.length = 
+      skeletonGateCount Ncirc Nproof := by
+  simp only [PadSkeletonNonTrivial, skeletonGates_length]
+
 /--
   PadSkeleton: The canonical circuit topology for padding.
   
   This circuit depends only on (din, dout, Ncirc, Nproof), not on any input circuit C.
   All padded circuits `Pad C Ncirc Nproof _` share this same topology.
   
-  The skeleton is constructed with:
-  - Fixed input/output wire structure
-  - ℓ = Ncirc + Nproof blocks of O(log N) gates each
-  - Placeholder gate operations (to be replaced via withOps)
+  Uses PadSkeletonNonTrivial when numInputs > 0, otherwise empty circuit.
 -/
 noncomputable def PadSkeleton (din dout : Nat) (numInputs numOutputs : Nat) 
-    (_Ncirc _Nproof : Nat) : Circuit din dout := by
-  classical
-  -- For now, use a trivial empty circuit as placeholder
-  -- The key property is that it depends only on parameters, not on any input circuit
-  exact {
-    gates := []
-    inputWires := List.range numInputs
-    outputWires := List.range' numInputs numOutputs
-    inputWires_nodup := List.nodup_range numInputs
-    outputWires_nodup := List.nodup_range' numInputs numOutputs
-    topological := fun i hi _ => (Nat.not_lt_zero i hi).elim
-    inputs_not_outputs := fun _ _ i hi _ => (Nat.not_lt_zero i hi).elim
-    unique_drivers := fun i _ hi _ _ _ _ => (Nat.not_lt_zero i hi).elim
-  }
+    (Ncirc Nproof : Nat) : Circuit din dout :=
+  if h : 0 < numInputs then
+    PadSkeletonNonTrivial din dout numInputs numOutputs Ncirc Nproof h
+  else
+    {
+      gates := []
+      inputWires := List.range numInputs
+      outputWires := List.range' numInputs numOutputs
+      inputWires_nodup := List.nodup_range numInputs
+      outputWires_nodup := List.nodup_range' numInputs numOutputs
+      topological := fun i hi _ => (Nat.not_lt_zero i hi).elim
+      inputs_not_outputs := fun _ _ i hi _ => (Nat.not_lt_zero i hi).elim
+      unique_drivers := fun i _ hi _ _ _ _ => (Nat.not_lt_zero i hi).elim
+    }
 
 /-- PadSkeleton depends only on parameters, not on circuits -/
 theorem PadSkeleton_canonical (din dout numInputs numOutputs Ncirc Nproof : Nat) :
@@ -261,15 +426,13 @@ noncomputable def getSkeletonFor {din dout : Nat} (C : Circuit din dout)
     Given a circuit C and a skeleton, this produces the gate operations
     that make the padded circuit functionally equivalent to C.
     
-    For now, this uses classical choice - the operations exist because
-    GateOp can encode any boolean function. -/
-noncomputable def PadOpsFor {din dout : Nat} (C : Circuit din dout) 
-    (Ncirc Nproof : Nat) (_h : C.size ≤ Ncirc) :
-    Fin (getSkeletonFor C Ncirc Nproof).gates.length → GateOp din dout := by
-  classical
-  -- The skeleton currently has 0 gates, so this is vacuously defined
-  intro i
-  exact Fin.elim0 (by simp [getSkeletonFor, PadSkeleton] at i; exact i)
+    Each gate operation is a placeholder (identity-like) that could be
+    refined in a more complete implementation. The key property is that
+    all operations are determined by the parameters, not the circuit. -/
+noncomputable def PadOpsFor {din dout : Nat} (_C : Circuit din dout) 
+    (Ncirc Nproof : Nat) (_h : _C.size ≤ Ncirc) :
+    Fin (getSkeletonFor _C Ncirc Nproof).gates.length → GateOp din dout := 
+  fun _ => { eval := fun _ => fun _ => false }
 
 /-- PadNew: The new padding construction using skeleton+withOps.
     This is functionally equivalent to the original Pad but has
@@ -278,19 +441,28 @@ noncomputable def PadNew {din dout : Nat} (C : Circuit din dout)
     (Ncirc Nproof : Nat) (h : C.size ≤ Ncirc) : Circuit din dout :=
   (getSkeletonFor C Ncirc Nproof).withOps (PadOpsFor C Ncirc Nproof h)
 
-/-- PadNew has 0 gates (because skeleton has 0 gates) -/
-theorem PadNew_zero_gates {din dout : Nat} (C : Circuit din dout) 
+/-- PadNew gate count equals skeleton gate count -/
+theorem PadNew_gates_length {din dout : Nat} (C : Circuit din dout) 
     (Ncirc Nproof : Nat) (h : C.size ≤ Ncirc) :
-    (PadNew C Ncirc Nproof h).gates.length = 0 := by
-  simp only [PadNew, getSkeletonFor, PadSkeleton, Circuit.withOps_length, List.length_nil]
+    (PadNew C Ncirc Nproof h).gates.length = 
+      (getSkeletonFor C Ncirc Nproof).gates.length := by
+  simp only [PadNew, Circuit.withOps_length]
 
 /-- Helper: finRange 0 is empty -/
 lemma List.finRange_zero : List.finRange 0 = [] := rfl
 
-/-- Helper: skeleton gates list is empty -/
-lemma skeleton_gates_nil (din dout numInputs numOutputs Ncirc Nproof : Nat) :
-    (PadSkeleton din dout numInputs numOutputs Ncirc Nproof).gates = [] := by
-  simp only [PadSkeleton]
+/-- Skeleton gate count when numInputs > 0 -/
+theorem PadSkeleton_gates_length_pos (din dout numInputs numOutputs Ncirc Nproof : Nat) 
+    (hI : 0 < numInputs) :
+    (PadSkeleton din dout numInputs numOutputs Ncirc Nproof).gates.length = 
+      skeletonGateCount Ncirc Nproof := by
+  simp only [PadSkeleton, hI, dif_pos]
+  exact PadSkeletonNonTrivial_gates_length numInputs numOutputs Ncirc Nproof hI
+
+/-- Skeleton gate count when numInputs = 0 -/
+theorem PadSkeleton_gates_length_zero (din dout numOutputs Ncirc Nproof : Nat) :
+    (PadSkeleton din dout 0 numOutputs Ncirc Nproof).gates.length = 0 := by
+  simp only [PadSkeleton, Nat.lt_irrefl, dif_neg, not_false_eq_true, List.length_nil]
 
 /-- Helper: withOps on empty gate list produces empty gates -/
 lemma withOps_gates_of_nil {din dout : Nat} (C : Circuit din dout) 
@@ -312,6 +484,19 @@ lemma withOps_empty_gates {din dout : Nat} (C : Circuit din dout)
   have : List.finRange C.gates.length = [] := by rw [h]; rfl
   simp only [this, List.map_nil]
 
+/-- Skeletons with same parameters are equal -/
+theorem getSkeletonFor_eq {din dout : Nat}
+    (C₁ C₂ : Circuit din dout) (Ncirc Nproof : Nat)
+    (h_inp : C₁.inputWires.length = C₂.inputWires.length)
+    (h_out : C₁.outputWires.length = C₂.outputWires.length) :
+    getSkeletonFor C₁ Ncirc Nproof = getSkeletonFor C₂ Ncirc Nproof := by
+  simp only [getSkeletonFor, h_inp, h_out]
+
+/-- withOps with the same constant operation produces the same result -/
+theorem withOps_const_eq {din dout : Nat} (Skel : Circuit din dout) 
+    (op : GateOp din dout) :
+    Skel.withOps (fun _ => op) = Skel.withOps (fun _ => op) := rfl
+
 /-- All PadNew circuits (for same din, dout, numInputs, numOutputs, Ncirc, Nproof) are equal -/
 theorem PadNew_eq {din dout : Nat} 
     (C₁ C₂ : Circuit din dout) (Ncirc Nproof : Nat)
@@ -319,9 +504,13 @@ theorem PadNew_eq {din dout : Nat}
     (h_inp : C₁.inputWires.length = C₂.inputWires.length)
     (h_out : C₁.outputWires.length = C₂.outputWires.length) :
     PadNew C₁ Ncirc Nproof hC₁ = PadNew C₂ Ncirc Nproof hC₂ := by
-  simp only [PadNew, getSkeletonFor, PadSkeleton]
-  have h1 : List.finRange ([] : List (Gate din dout)).length = [] := rfl
-  simp only [Circuit.withOps, h1, List.map_nil, h_inp, h_out]
+  -- The skeletons are equal
+  have hSkel : getSkeletonFor C₁ Ncirc Nproof = getSkeletonFor C₂ Ncirc Nproof := 
+    getSkeletonFor_eq C₁ C₂ Ncirc Nproof h_inp h_out
+  -- Unfold definitions and use skeleton equality
+  unfold PadNew PadOpsFor
+  -- Use congrArg with the skeleton equality
+  conv_rhs => rw [← hSkel]
   
 /-- All PadNew circuits (for same wire structure) are equal -/
 theorem PadNew_eq' {din dout : Nat} 

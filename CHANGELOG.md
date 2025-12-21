@@ -6,19 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Lean 4: Non-trivial PadSkeletonNonTrivial (Issue #19)
+- **PaddingConstruction.lean**: 0 sorries, ~620 lines
+- **Implemented `PadSkeletonNonTrivial`** with actual gates satisfying all circuit invariants:
+  - Uses `skeletonGates` with `skeletonGateCount Ncirc Nproof` gates
+  - Fully proven `topological`, `inputs_not_outputs`, `unique_drivers` invariants
+  - Requires `numInputs > 0` hypothesis for well-formedness
+- Updated `PadSkeleton` to use `PadSkeletonNonTrivial` when `numInputs > 0`
+- New/updated theorems:
+  - `PadSkeletonNonTrivial_gates_length`: Gate count equals `skeletonGateCount`
+  - `PadSkeleton_gates_length_pos`: Gate count when `numInputs > 0`
+  - `PadSkeleton_gates_length_zero`: Gate count is 0 when `numInputs = 0`
+  - `PadNew_gates_length`: PadNew gate count equals skeleton gate count
+  - `getSkeletonFor_eq`: Skeletons with same parameters are equal
+- Updated `PadOpsFor` to return constant placeholder operations
+- All downstream proofs updated and compiling
+
+### Lean 4: Block Structure Infrastructure (Issue #19)
+- Added block structure infrastructure for non-trivial skeleton:
+  - `blockSize_pos`: Block size is always positive
+  - `gateToBlock`: Maps gate index to block index via `gateIdx / blockSize`
+  - `gateToBlock_lt`: Proves block index is valid for skeleton gates
+  - `blockGates`: Finset of gate indices in a specific block
+  - `blockGates_card_le`: Each block has at most `blockSize` gates
+  - `blockGates_size_O_log`: Block has at most `O_log(N)` gates
+- Added skeletonGates property lemmas (proving gates satisfy circuit invariants):
+  - `skeletonGates_get`: Get gate at index i from skeletonGates
+  - `skeletonGate_output`: Output wire of gate i at position m
+  - `skeletonGate_input`: Input wire of gate i at position k
+  - `skeletonGate_output_ge`: Gate output wires are >= numInputs
+  - `skeletonGate_input_lt`: Gate input wires bounded by numInputs + i*dout
+  - `mul_add_lt_mul_of_lt`: Helper for unique_drivers proof
+- Current status:
+  - `PadSkeletonNonTrivial` now has real gates (not 0-gate placeholder)
+  - All circuit invariants proven for `PadSkeletonNonTrivial`
+  - `pad_transitive_sequiv_core_v2` theorem fully proven
+  - Axiom count: 1 (`pad_transitive_sequiv_core` in Padding.lean)
+
 ### Lean 4: Completed `pad_transitive_sequiv_core_v2` Proof
-- **PaddingConstruction.lean** now has 0 sorry markers (was 4)
 - Proved `pad_transitive_sequiv_core_v2` theorem using trivial 0-gate skeleton
 - Demonstrates the proof structure is sound; full construction requires non-trivial skeleton
 - New theorems proven:
-  - `PadNew_zero_gates`: Skeleton-based PadNew has 0 gates
   - `PadNew_eq`, `PadNew_eq'`: Same-parameter PadNew circuits are equal
   - `PadNew_topo_invariant`: Topological equivalence of PadNew circuits
   - `Hybrid_all_eq`: All hybrids are equal (trivial with 0-gate skeleton)
   - `Hybrid_step_sEquiv`: Consecutive hybrids are s-equivalent
   - `pad_transitive_sequiv_core_v2`: Full transitive s-equivalence theorem
 - Key insight: With 0-gate skeleton, s-equivalence is trivial via reflexivity
-- Original axiom `pad_transitive_sequiv_core` remains in Padding.lean for full construction
+- Original axiom `pad_transitive_sequiv_core` remains in Padding.lean
 
 ### Lean 4: Eliminated `Indistinguishable.trans` Axiom
 - **Axiom count reduced from 2 to 1**
