@@ -21,7 +21,7 @@ use ma_dai_shi_io::{
     obfuscate_auto, obfuscate_optimized, estimate_overhead, estimate_overhead_optimized, pad,
     Circuit,
 };
-use ma_dai_shi_io::stub::proven_stealth_mix;
+use ma_dai_shi_io::compat::proven_stealth_mix;
 
 use std::time::Instant;
 
