@@ -4,12 +4,6 @@ Quasi-linear indistinguishability obfuscation (iO).
 
 Implementation of the construction from ["Quasi-Linear Indistinguishability Obfuscation via Mathematical Proofs of Equivalence and Applications"](https://eprint.iacr.org/2025/307) (Ma, Dai, Shi 2025).
 
-| Component | Status |
-|-----------|--------|
-| Rust Implementation | Core library |
-| Lean 4 Formalization | [OK] 0 sorries, 2 axioms |
-| Honeypot Demo | WASM + zkSNARK |
-
 ## What is iO?
 
 **Indistinguishability Obfuscation** transforms a program into an equivalent program that:
@@ -154,6 +148,14 @@ See [lean/README.md](lean/README.md) for details.
 - [Ma-Dai-Shi 2025 Paper](https://eprint.iacr.org/2025/307)
 - [Noir Language](https://noir-lang.org/) - zkSNARK DSL
 - [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) - Mnemonic seed phrases
+
+## Status
+
+| Component | Status |
+|-----------|--------|
+| Rust Implementation | Core library (90 tests) |
+| Lean 4 Formalization | 0 sorries, 2 axioms |
+| Honeypot Demo | WASM + zkSNARK |
 
 ## License
 
