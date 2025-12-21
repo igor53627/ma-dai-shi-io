@@ -134,7 +134,7 @@ cd lean && lake build
 
 The `lean/` directory contains a complete Lean 4 formalization of the paper's core theorems.
 
-**Status:** 0 sorries, 2 well-documented axioms
+**Status:** 0 sorries, 1 documented axiom
 
 | Theorem | File |
 |---------|------|
@@ -156,7 +156,7 @@ See [lean/README.md](lean/README.md) for details.
 | Component | Status |
 |-----------|--------|
 | Rust Implementation | Core library (90 tests) |
-| Lean 4 Formalization | 0 sorries, 2 axioms |
+| Lean 4 Formalization | 0 sorries, 1 axiom |
 | Honeypot Demo | WASM + zkSNARK |
 
 ## License
